@@ -1,6 +1,8 @@
-# VORA Energia IA - Frontend
+# System AI Template - Frontend
 
-Assistente de IA estilo Claude/ChatGPT para gestores de energia, construído com Next.js 14, React 18, TypeScript e Tailwind CSS.
+Template de frontend para assistente de IA estilo Claude/ChatGPT, construído com Next.js 15, React 19, TypeScript e Tailwind CSS.
+
+Este é um template reutilizável que pode ser adaptado para diferentes domínios e casos de uso.
 
 ## Tecnologias Utilizadas
 
@@ -320,10 +322,14 @@ O frontend espera os seguintes endpoints do backend:
 - Responsivo em todos os breakpoints
 - Acessibilidade (ARIA labels, navegação por teclado)
 
+## Como Usar Este Template
+
+1. Clone o repositório
+2. Instale as dependências: `npm install`
+3. Configure as variáveis de ambiente (veja `.env.example`)
+4. Personalize o projeto conforme suas necessidades
+5. Atualize o README com informações do seu projeto
+
 ## Licença
 
-Este projeto é privado e proprietário da VORA Energia.
-
-## Contato
-
-Para dúvidas ou suporte, entre em contato com a equipe de desenvolvimento.
+Este é um template open-source. Sinta-se livre para usar e modificar conforme necessário.

@@ -5,7 +5,7 @@ import { useChatStore } from '@/lib/stores/chatStore';
 import { chatApi } from '@/lib/api/chat';
 // Note: interruptParser utilities are deprecated - interrupts now come as direct SSE events
 // See @/lib/utils/interruptParser.ts for backward compatibility utilities if needed
-import type { Message, Conversation, ContentBlockRef, MessageAttachment } from '@/types/chat';
+import type { Message, Conversation, ContentBlockRef, MessageAttachment, ToolCall } from '@/types/chat';
 import { appendTextBlockRef } from '@/lib/utils/contentBlocks';
 import {
   completeRunningToolCallForInterrupt,
@@ -872,6 +872,19 @@ function handleToolContentChunk(
 /**
  * Handles tool_call_complete event - finalizes tool call with result
  */
+/**
+ * Handles tool_call_complete event - finalizes tool call with result
+ * 
+ * This function is critical for parallel tool calls where multiple tools execute simultaneously.
+ * It uses call_id (when available) to accurately identify the specific tool call, preventing
+ * race conditions where tool_call_complete events may arrive out of order or before
+ * tool_call_execution events.
+ * 
+ * References:
+ * - INTERRUPT_CALL_ID_REQUIREMENT.md: call_id is REQUIRED for parallel tool calls
+ * - LangGraph SSE events: tool_call_start -> tool_call_execution -> tool_call_complete
+ * - Research: https://github.com/langchain-ai/langgraph/issues/3034 (parallel tool calls)
+ */
 function handleToolCallComplete(
   conversationId: string,
   messageId: string,
@@ -895,10 +908,12 @@ function handleToolCallComplete(
   const messages = getMessages(conversationId);
   let message = messages.find((msg) => msg.id === messageId);
 
+  // If message not found or has no tool calls, search all messages
+  // This handles cases where backend sends wrong messageId or tool calls are in different message
+  // Critical for parallel tool calls where events may reference different messages
   if (!message || !message.toolCalls) {
-    // Message not found or has no tool calls - search all messages
-    // This handles cases where backend sends wrong messageId or tool calls are in different message
     if (callId) {
+      // Search by call_id across all messages (most reliable)
       for (const msg of messages) {
         const toolCall = msg.toolCalls?.find(tc => tc.id === callId);
         if (toolCall) {
@@ -907,11 +922,12 @@ function handleToolCallComplete(
         }
       }
     } else if (toolName) {
-      // Find most recent message with running tool call matching tool_name
+      // Fallback: Find most recent message with starting/running tool call matching tool_name
+      // Less reliable for parallel calls - should only happen if backend doesn't send call_id
       for (let i = messages.length - 1; i >= 0; i--) {
         const msg = messages[i];
         const toolCall = msg.toolCalls?.find(tc => 
-          tc.tool_name === toolName && tc.status === 'running'
+          tc.tool_name === toolName && (tc.status === 'running' || tc.status === 'starting')
         );
         if (toolCall) {
           message = msg;
@@ -922,39 +938,81 @@ function handleToolCallComplete(
   }
 
   if (!message || !message.toolCalls) {
+    const availableMessages = messages.map(m => 
+      `${m.id}(${m.toolCalls?.length || 0} tool calls: ${m.toolCalls?.map(tc => `${tc.tool_name}(${tc.id}, ${tc.status})`).join(', ') || 'none'})`
+    ).join(', ');
     console.warn(
       `[ToolCallComplete] Message not found or has no tool calls. ` +
       `Message ID: ${messageId}, call_id: ${callId || 'none'}, tool_name: ${toolName}. ` +
-      `Available messages: ${messages.map(m => `${m.id}(${m.toolCalls?.length || 0} tool calls)`).join(', ')}`
+      `Available messages: ${availableMessages}`
     );
     return;
   }
 
-  // Find tool call by call_id (preferred) or tool_name (fallback)
-  let toolCall = callId 
-    ? message.toolCalls.find(tc => tc.id === callId)
-    : message.toolCalls.find(tc => tc.tool_name === toolName && tc.status === 'running');
-
-  // If not found and call_id provided, search all messages (handles backend sending wrong call_id)
-  if (!toolCall && callId) {
-    for (const msg of messages) {
-      toolCall = msg.toolCalls?.find(tc => tc.id === callId);
-      if (toolCall) {
-        message = msg;
-        break;
+  // Find tool call by call_id (preferred) - REQUIRED for parallel tool calls
+  // According to INTERRUPT_CALL_ID_REQUIREMENT.md, call_id should always be present
+  let toolCall: ToolCall | undefined;
+  
+  if (callId) {
+    // First, search in the expected message
+    toolCall = message.toolCalls.find(tc => tc.id === callId);
+    
+    // If not found, search all messages (handles backend sending wrong messageId)
+    // This is critical for parallel tool calls where events may reference different messages
+    if (!toolCall) {
+      for (const msg of messages) {
+        toolCall = msg.toolCalls?.find(tc => tc.id === callId);
+        if (toolCall) {
+          message = msg;
+          break;
+        }
+      }
+    }
+  } else {
+    // Fallback: search by tool_name and status (less reliable for parallel calls)
+    // This should only happen if backend doesn't send call_id (which violates the contract)
+    console.warn(
+      `[ToolCallComplete] No call_id provided for tool_name: ${toolName}. ` +
+      `Using fallback search by tool_name. This may fail with parallel tool calls.`
+    );
+    toolCall = message.toolCalls.find(tc => 
+      tc.tool_name === toolName && (tc.status === 'running' || tc.status === 'starting')
+    );
+    
+    // If still not found, search all messages
+    if (!toolCall) {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const msg = messages[i];
+        toolCall = msg.toolCalls?.find(tc => 
+          tc.tool_name === toolName && (tc.status === 'running' || tc.status === 'starting')
+        );
+        if (toolCall) {
+          message = msg;
+          break;
+        }
       }
     }
   }
 
   if (toolCall) {
-    // Only complete if tool call is still running (avoid double completion)
-    if (toolCall.status === 'running') {
+    // Complete if tool call is starting or running (handle cases where tool_call_execution 
+    // wasn't received before tool_call_complete, or when execution completes very quickly)
+    // This is critical for parallel tool calls where events may arrive out of order
+    if (toolCall.status === 'running' || toolCall.status === 'starting') {
       completeToolCall(conversationId, message.id, toolCall.id, result, success, executionTime, error);
-    } else {
+    } else if (toolCall.status === 'completed' || toolCall.status === 'error') {
+      // Tool call already completed - this can happen with duplicate events or race conditions
       console.info(
         `[ToolCallComplete] Tool call ${toolCall.id} already completed (status: ${toolCall.status}). ` +
-        `Skipping duplicate completion.`
+        `Skipping duplicate completion. call_id: ${callId || 'none'}, tool_name: ${toolName}`
       );
+    } else {
+      // Unknown status - log warning but still try to complete
+      console.warn(
+        `[ToolCallComplete] Tool call ${toolCall.id} has unexpected status: ${toolCall.status}. ` +
+        `Attempting to complete anyway. call_id: ${callId || 'none'}, tool_name: ${toolName}`
+      );
+      completeToolCall(conversationId, message.id, toolCall.id, result, success, executionTime, error);
     }
   } else {
     const toolCallsList = message.toolCalls?.map(tc => `${tc.tool_name}(${tc.id}, status: ${tc.status})`).join(', ') || 'none';

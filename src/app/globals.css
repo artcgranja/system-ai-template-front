@@ -4,45 +4,51 @@
 
 @layer base {
   :root {
-    /* Background principal - branco puro para máxima clareza */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    /* Sidebar com a mesma cor do tema escuro */
-    --sidebar-background: 0 0% 13%;
+    /* Background principal - Slate-50 (neutral-50) */
+    --background: 210 33% 98%;
+    /* Foreground - Slate-800 (neutral-800) para texto principal */
+    --foreground: 210 33% 23%;
+    /* Sidebar com a mesma cor do tema escuro (charcoal-800) */
+    --sidebar-background: 240 5% 13%;
     /* Texto da sidebar sempre claro (mesmo no tema claro) */
-    --sidebar-foreground: 0 0% 96%;
+    --sidebar-foreground: 240 5% 96%;
     /* Bordas da sidebar sempre iguais ao tema escuro */
-    --sidebar-border: 0 0% 25%;
+    --sidebar-border: 240 5% 25%;
     /* Separadores sempre escuros */
-    --separator: 0 0% 25%;
-    /* Card com tom levemente acinzentado para diferenciação sutil */
-    --card: 0 0% 98%;
-    --card-foreground: 222.2 84% 4.9%;
-    /* Popover com cor escura igual ao tema dark para melhor visibilidade */
-    --popover: 0 0% 16%;
-    --popover-foreground: 0 0% 96%;
-    /* Cyan VORA para elementos principais */
-    --primary: 154 100% 48%;
-    --primary-foreground: 0 0% 0%;
-    /* Secondary com tom azul-cinza claro para contraste visível */
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    /* Muted com tom azul-cinza médio para diferenciação clara */
-    --muted: 210 15% 94%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    /* Cyan claro VORA para accent */
-    --accent: 168 100% 43%;
-    --accent-foreground: 0 0% 0%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    /* Border e Input com cinza mais definido para delimitação clara */
-    --border: 214 20% 87%;
-    --input: 214 20% 87%;
-    /* Ring em cyan VORA */
-    --ring: 154 100% 48%;
+    --separator: 240 5% 25%;
+    /* Card com branco puro para diferenciação clara */
+    --card: 0 0% 100%;
+    --card-foreground: 210 33% 23%;
+    /* Popover com branco puro */
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 33% 23%;
+    /* Astro Steel Blue (astro-500) para elementos principais */
+    --primary: 213 33% 46%;
+    --primary-foreground: 0 0% 100%;
+    /* Secondary com neutral-100 (Slate-100) */
+    --secondary: 210 33% 95%;
+    --secondary-foreground: 210 33% 23%;
+    /* Muted com neutral-100 */
+    --muted: 210 33% 95%;
+    --muted-foreground: 210 33% 58%;
+    /* Astro Steel Blue claro (astro-400) para accent */
+    --accent: 213 33% 56%;
+    --accent-foreground: 0 0% 100%;
+    /* Error color para ações destrutivas */
+    --destructive: 5 45% 60%;
+    --destructive-foreground: 0 0% 100%;
+    /* Border e Input com neutral-200 (Slate-200) */
+    --border: 210 33% 90%;
+    --input: 210 33% 90%;
+    /* Ring em Astro Steel Blue */
+    --ring: 213 33% 46%;
     --radius: 0.5rem;
 
-    /* Cores da marca VORA */
+    /* Glow effects - Modo Claro */
+    --glow-primary: rgba(79, 115, 158, 0.15);
+    --glow-accent: rgba(107, 139, 181, 0.1);
+
+    /* Cores da marca VORA (mantidas para compatibilidade) */
     --vora-cyan: 154 100% 48%;
     --vora-cyan-light: 168 100% 43%;
     --vora-purple: 250 94% 64%;
@@ -52,55 +58,59 @@
   }
 
   .dark {
-    /* Cinza grafite escuro para fundo principal */
-    --background: 0 0% 10%;
-    /* Sidebar um pouco mais claro que o fundo principal */
-    --sidebar-background: 0 0% 13%;
+    /* Charcoal-800 para fundo principal (evita preto puro) */
+    --background: 240 5% 13%;
+    /* Sidebar igual ao fundo principal */
+    --sidebar-background: 240 5% 13%;
     /* Texto da sidebar sempre claro */
-    --sidebar-foreground: 0 0% 96%;
-    /* Bordas da sidebar sempre iguais */
-    --sidebar-border: 0 0% 25%;
-    /* Separadores sempre escuros */
-    --separator: 0 0% 25%;
-    /* Off-white para texto principal */
-    --foreground: 0 0% 96%;
+    --sidebar-foreground: 240 5% 96%;
+    /* Bordas da sidebar */
+    --sidebar-border: 240 5% 25%;
+    /* Separadores */
+    --separator: 240 5% 25%;
+    /* Charcoal-50 (off-white) para texto principal */
+    --foreground: 240 5% 96%;
 
-    /* Cinza um pouco mais claro para cards/surfaces */
-    --card: 0 0% 16%;
-    --card-foreground: 0 0% 96%;
+    /* Charcoal-700 para cards/surfaces */
+    --card: 240 5% 18%;
+    --card-foreground: 240 5% 96%;
 
     /* Popover similar ao card */
-    --popover: 0 0% 16%;
-    --popover-foreground: 0 0% 96%;
+    --popover: 240 5% 18%;
+    --popover-foreground: 240 5% 96%;
 
-    /* Cyan VORA para elementos principais */
-    --primary: 154 100% 48%;
-    --primary-foreground: 0 0% 0%;
+    /* Astro Steel Blue claro (astro-400) para dark mode - melhor contraste e menos "vibração" */
+    --primary: 213 33% 56%;
+    --primary-foreground: 240 5% 13%;
 
-    /* Cinza médio para elementos secundários */
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 96%;
+    /* Charcoal-700 para elementos secundários */
+    --secondary: 240 5% 18%;
+    --secondary-foreground: 240 5% 96%;
 
-    /* Cinza médio para elementos silenciados */
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 63%;
+    /* Charcoal-700 para elementos silenciados */
+    --muted: 240 5% 18%;
+    --muted-foreground: 240 5% 63%;
 
-    /* Cyan claro VORA para accent */
-    --accent: 168 100% 43%;
-    --accent-foreground: 0 0% 0%;
+    /* Astro Steel Blue (astro-500) para accent */
+    --accent: 213 33% 46%;
+    --accent-foreground: 240 5% 96%;
 
-    /* Vermelho para ações destrutivas */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 96%;
+    /* Error color para ações destrutivas */
+    --destructive: 5 45% 60%;
+    --destructive-foreground: 240 5% 96%;
 
-    /* Bordas em cinza médio */
-    --border: 0 0% 25%;
-    --input: 0 0% 25%;
+    /* Bordas em charcoal-600 */
+    --border: 240 5% 25%;
+    --input: 240 5% 25%;
 
-    /* Ring em cyan VORA */
-    --ring: 154 100% 48%;
+    /* Ring em Astro Steel Blue claro */
+    --ring: 213 33% 56%;
 
-    /* Cores da marca VORA (mesmo que light) */
+    /* Glow effects - Modo Escuro (mais intensos) */
+    --glow-primary: rgba(107, 139, 181, 0.25);
+    --glow-accent: rgba(79, 115, 158, 0.15);
+
+    /* Cores da marca VORA (mantidas para compatibilidade) */
     --vora-cyan: 154 100% 48%;
     --vora-cyan-light: 168 100% 43%;
     --vora-purple: 250 94% 64%;
@@ -267,11 +277,15 @@
 
   /* Shadow utilities */
   .shadow-glow {
-    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.3);
+    box-shadow: 0 0 20px -5px var(--glow-primary);
   }
 
   .shadow-glow-lg {
-    box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.4);
+    box-shadow: 0 0 40px -10px var(--glow-primary);
+  }
+
+  .shadow-glow-accent {
+    box-shadow: 0 0 20px -5px var(--glow-accent);
   }
 
   /* Typography utilities */
@@ -398,10 +412,10 @@
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.3);
+    box-shadow: 0 0 20px -5px var(--glow-primary);
   }
   50% {
-    box-shadow: 0 0 30px -5px hsl(var(--primary) / 0.5);
+    box-shadow: 0 0 30px -5px var(--glow-accent);
   }
 }
 

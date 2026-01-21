@@ -19,16 +19,9 @@ interface DepartmentBreakdownProps {
   isLoading?: boolean;
 }
 
-const ASTRO_COLORS = [
-  '#4F739E', // astro-500 - Astro Steel Blue (primário)
-  '#6b8bb5', // astro-400 - Astro Steel Blue claro
-  '#8daec9', // astro-300 - Astro Steel Blue mais claro
-  '#6e4df9', // Roxo (mantido para diferenciação)
-  '#ff8c42', // Laranja
-  '#2e6cff', // Azul Royal
-  '#ffdd00', // Amarelo
-  '#ff4242', // Vermelho
-];
+import { CHART_PALETTE } from '@/config/chartColors';
+
+const ASTRO_COLORS = CHART_PALETTE;
 
 function formatNumber(value: number): string {
   if (value >= 1000000) {

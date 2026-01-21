@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { ConsumptionHistoryData } from '@/lib/utils/toolSpecificParsers';
+import { CHART_PALETTE } from '@/config/chartColors';
 
 interface ConsumptionHistoryChartProps {
   data: ConsumptionHistoryData[];
@@ -87,17 +88,8 @@ export function ConsumptionHistoryChart({ data }: ConsumptionHistoryChartProps) 
   const { chartData, years } = useMemo(() => prepareChartData(data), [data]);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
-  // Color palette for different years (Astro Steel Blue)
-  const colors = [
-    '#4F739E', // astro-500 - Astro Steel Blue (primário)
-    '#6b8bb5', // astro-400 - Astro Steel Blue claro
-    '#8daec9', // astro-300 - Astro Steel Blue mais claro
-    '#6e4df9', // Roxo (mantido para diferenciação)
-    '#ff4242', // Vermelho
-    '#ff8c42', // Laranja
-    '#ffdd00', // Amarelo
-    '#2e6cff', // Azul Royal
-  ];
+  // Color palette for different years (Astro Steel Blue + Complementary)
+  const colors = CHART_PALETTE;
 
   if (data.length === 0) {
     return (

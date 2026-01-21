@@ -31,20 +31,20 @@ export function QuotaModal({ open, onClose, type = 'exceeded', warningMessage }:
   // Content based on type
   const content = {
     exceeded: {
-      icon: <AlertTriangle className="h-12 w-12 text-red-500" />,
+      icon: <AlertTriangle className="h-12 w-12 text-rose-500" />,
       title: 'Cota de Tokens Excedida',
       description: `Sua cota semanal de tokens foi excedida. Você usou ${formatTokens(quota?.currentUsage ?? 0)} de ${formatTokens(quota?.quotaLimit ?? 0)} tokens disponíveis.`,
       action: 'Entendido',
     },
     suspended: {
-      icon: <Ban className="h-12 w-12 text-red-500" />,
+      icon: <Ban className="h-12 w-12 text-rose-500" />,
       title: 'Conta Suspensa',
       description:
         'Sua conta está temporariamente suspensa. Entre em contato com o administrador para mais informações.',
       action: 'Entendido',
     },
     warning: {
-      icon: <Clock className="h-12 w-12 text-yellow-500" />,
+      icon: <Clock className="h-12 w-12 text-amber-500" />,
       title: 'Alerta de Cota',
       description:
         warningMessage ||
@@ -73,7 +73,7 @@ export function QuotaModal({ open, onClose, type = 'exceeded', warningMessage }:
           <div className="space-y-2">
             <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full bg-yellow-500 transition-all duration-300 rounded-full"
+                className="h-full bg-amber-500 transition-all duration-300 rounded-full"
                 style={{ width: `${Math.min(Number(quota.percentageUsed) || 0, 100)}%` }}
               />
             </div>

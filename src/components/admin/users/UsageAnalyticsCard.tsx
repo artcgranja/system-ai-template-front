@@ -21,10 +21,12 @@ import { cn } from '@/lib/utils';
 import { regroupTimeSeriesData } from '@/lib/utils/analytics';
 import type { UsageAnalytics, TimeSeriesDataPoint, ModelBreakdown, AnalyticsGroupBy } from '@/types/analytics';
 
+import { ASTRO_CHART_COLORS } from '@/config/chartColors';
+
 const ASTRO_COLORS = {
-  primary: '#4F739E', // astro-500 - Astro Steel Blue
-  secondary: '#6b8bb5', // astro-400 - Astro Steel Blue claro
-  tertiary: '#8daec9', // astro-300 - Astro Steel Blue mais claro
+  primary: ASTRO_CHART_COLORS.primary,
+  secondary: ASTRO_CHART_COLORS.complementary,
+  tertiary: ASTRO_CHART_COLORS.teal,
 };
 
 interface UsageAnalyticsCardProps {

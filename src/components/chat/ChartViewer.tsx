@@ -16,6 +16,7 @@ import {
 import { CheckSquare, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatKeyName, formatValue } from '@/lib/utils/toolResultParser';
+import { CHART_PALETTE } from '@/config/chartColors';
 
 interface ChartViewerProps {
   data: Record<string, unknown>[];
@@ -166,17 +167,8 @@ export function ChartViewer({ data }: ChartViewerProps) {
   const ChartComponent = hasDateColumn ? LineChart : BarChart;
   const DataComponent = hasDateColumn ? Line : Bar;
 
-  // Color palette for multiple series (Astro Steel Blue)
-  const colors = [
-    '#4F739E', // astro-500 - Astro Steel Blue (primário)
-    '#6b8bb5', // astro-400 - Astro Steel Blue claro
-    '#8daec9', // astro-300 - Astro Steel Blue mais claro
-    '#6e4df9', // Roxo (mantido para diferenciação)
-    '#ff4242', // Vermelho
-    '#ff8c42', // Laranja
-    '#ffdd00', // Amarelo
-    '#2e6cff', // Azul Royal
-  ];
+  // Color palette for multiple series (Astro Steel Blue + Complementary)
+  const colors = CHART_PALETTE;
 
   return (
     <div className="space-y-4" data-chart-viewer>

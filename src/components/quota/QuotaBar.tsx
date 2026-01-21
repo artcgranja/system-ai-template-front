@@ -48,16 +48,17 @@ export function QuotaBar({ collapsed = false, className, showLabel = true }: Quo
   const percentage = Math.min(quota.percentageUsed, 100);
   const color = getQuotaColor(percentage);
 
+  // Harmonious colors with Astro theme
   const barColorClass = {
-    green: 'bg-green-500',
-    yellow: 'bg-yellow-500',
-    red: 'bg-red-500',
+    green: 'bg-emerald-500',           // Emerald green - harmonious with Astro
+    yellow: 'bg-amber-500',            // Amber/orange - complementary to Astro blue
+    red: 'bg-rose-500',                // Rose red - warm accent
   }[color];
 
   const textColorClass = {
-    green: 'text-green-600 dark:text-green-400',
-    yellow: 'text-yellow-600 dark:text-yellow-400',
-    red: 'text-red-600 dark:text-red-400',
+    green: 'text-emerald-600 dark:text-emerald-400',
+    yellow: 'text-amber-600 dark:text-amber-400',
+    red: 'text-rose-600 dark:text-rose-400',
   }[color];
 
   if (collapsed) {

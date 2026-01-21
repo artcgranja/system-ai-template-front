@@ -46,10 +46,11 @@ export function QuotaStatsCard({ className }: QuotaStatsCardProps) {
 
   const percentageUsed = Number(stats.percentageUsed ?? 0);
   const color = getQuotaColor(percentageUsed);
+  // Harmonious colors with Astro theme
   const barColorClass = {
-    green: 'bg-green-500',
-    yellow: 'bg-yellow-500',
-    red: 'bg-red-500',
+    green: 'bg-emerald-500',           // Emerald green - harmonious with Astro
+    yellow: 'bg-amber-500',            // Amber/orange - complementary to Astro blue
+    red: 'bg-rose-500',                // Rose red - warm accent
   }[color];
 
   return (

@@ -85,7 +85,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
 
         {/* Logo/Title */}
         <div className="flex-1">
-          <h1 className="text-lg font-semibold">VORA Energia IA</h1>
+          <h1 className="text-lg font-semibold">Astro IA</h1>
         </div>
 
         {/* New Chat Button */}

@@ -12,13 +12,17 @@ export const SUPABASE_CONFIG = {
 };
 
 export const SUPABASE_STORAGE_URL = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL || 
-  'https://gswjkjuftdikymnqbnmm.supabase.co/storage/v1/object/public/public_img';
+  'https://rzhynabxboavikxppwap.supabase.co/storage/v1/object/public/astro-img';
 
 export const STORAGE_KEYS = {
-  accessToken: 'vora_access_token',
-  refreshToken: 'vora_refresh_token',
-  user: 'vora_user',
+  accessToken: 'astro_access_token',
+  refreshToken: 'astro_refresh_token',
+  user: 'astro_user',
 };
+
+// Cookie name for Next.js middleware (must match STORAGE_KEYS.accessToken)
+export const COOKIE_NAME = 'astro_access_token';
+export const REFRESH_COOKIE_NAME = 'astro_refresh_token';
 
 export const ROUTES = {
   home: '/',

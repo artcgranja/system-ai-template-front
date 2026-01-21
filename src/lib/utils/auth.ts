@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from '@/config/constants';
+import { STORAGE_KEYS, COOKIE_NAME } from '@/config/constants';
 
 /**
  * Get access token from localStorage
@@ -90,7 +90,7 @@ export function setAuthCookie(token: string): void {
   expiryDate.setDate(expiryDate.getDate() + expiryDays);
 
   // Set cookie with security flags
-  document.cookie = `vora_access_token=${token}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
+  document.cookie = `${COOKIE_NAME}=${token}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
 }
 
 /**
@@ -100,5 +100,5 @@ export function removeAuthCookie(): void {
   if (typeof window === 'undefined') return;
 
   // Set cookie with past expiry to delete it
-  document.cookie = 'vora_access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  document.cookie = `${COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 }

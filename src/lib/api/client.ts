@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import { API_CONFIG, STORAGE_KEYS, ROUTES } from '@/config/constants';
+import { API_CONFIG, STORAGE_KEYS, ROUTES, COOKIE_NAME } from '@/config/constants';
 import { isTokenExpiringSoon } from '@/lib/utils/auth';
 import type { ApiError, ApiResponse } from '@/types/api';
 import type { BackendLoginResponse } from '@/types/auth';
@@ -71,7 +71,7 @@ async function refreshAccessToken(): Promise<string | null> {
       const expiryDays = 30;
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + expiryDays);
-      document.cookie = `vora_access_token=${access_token}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
+      document.cookie = `${COOKIE_NAME}=${access_token}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
 
       return access_token;
     } catch {
@@ -135,7 +135,7 @@ apiClient.interceptors.response.use(
           localStorage.removeItem(STORAGE_KEYS.user);
 
           // Remove cookie
-          document.cookie = 'vora_access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          document.cookie = `${COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 
           // Redirect to login
           window.location.href = ROUTES.login;

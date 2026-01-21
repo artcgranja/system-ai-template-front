@@ -10,23 +10,24 @@ const nunitoSans = Nunito_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'VORA Energia IA - Assistente Inteligente',
-  description: 'Assistente de IA especializado em gestão de energia para gestores',
+  title: 'Astro IA - Assistente Inteligente',
+  description: 'Assistente de IA inteligente para gestores',
   manifest: '/manifest.json',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: `${SUPABASE_STORAGE_URL}/icon-192.png`, sizes: '192x192', type: 'image/png' },
-      { url: `${SUPABASE_STORAGE_URL}/icon-512.png`, sizes: '512x512', type: 'image/png' },
+      { url: `${SUPABASE_STORAGE_URL}/astro-icon_branco.svg`, sizes: 'any', type: 'image/svg+xml' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
-      { url: `${SUPABASE_STORAGE_URL}/icon-192.png`, sizes: '192x192', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
     ],
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'VORA Energia IA',
+    title: 'Astro IA',
   },
 };
 

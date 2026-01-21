@@ -7,7 +7,7 @@ import apiClient, { handleApiResponse } from './client';
 import { createCrudApi } from './factory/createCrudApi';
 import { createTransformer } from '@/lib/utils/transformers';
 import { getAccessToken, getRefreshToken } from '@/lib/utils/auth';
-import { API_CONFIG, STORAGE_KEYS, ROUTES } from '@/config/constants';
+import { API_CONFIG, STORAGE_KEYS, ROUTES, COOKIE_NAME } from '@/config/constants';
 import type { Conversation, BackendConversation, Message, BackendMessage, CreateMessagePayload, ContentBlockRef, MessageAttachment, BackendMessageAttachment } from '@/types/chat';
 import type { InterruptResponse } from '@/types/interrupt';
 import type { ApiResponse } from '@/types/api';
@@ -346,7 +346,7 @@ async function fetchWithTokenRefresh(
         localStorage.removeItem(STORAGE_KEYS.accessToken);
         localStorage.removeItem(STORAGE_KEYS.refreshToken);
         localStorage.removeItem(STORAGE_KEYS.user);
-        document.cookie = 'vora_access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = `${COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         window.location.href = ROUTES.login;
       }
       throw new Error('Sessão expirada. Por favor, faça login novamente.');
@@ -376,7 +376,7 @@ async function fetchWithTokenRefresh(
         const expiryDays = 30;
         const expiryDate = new Date();
         expiryDate.setDate(expiryDate.getDate() + expiryDays);
-        document.cookie = `vora_access_token=${access_token}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
+        document.cookie = `${COOKIE_NAME}=${access_token}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
       }
 
       // Retry original request with new token
@@ -391,7 +391,7 @@ async function fetchWithTokenRefresh(
         localStorage.removeItem(STORAGE_KEYS.accessToken);
         localStorage.removeItem(STORAGE_KEYS.refreshToken);
         localStorage.removeItem(STORAGE_KEYS.user);
-        document.cookie = 'vora_access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = `${COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         window.location.href = ROUTES.login;
       }
       throw new Error('Falha na autenticação. Por favor, faça login novamente.');

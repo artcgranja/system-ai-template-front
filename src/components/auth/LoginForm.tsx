@@ -49,7 +49,7 @@ export function LoginForm() {
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary">
           <Zap className="h-6 w-6 text-primary-foreground" />
         </div>
-        <CardTitle className="text-2xl">VORA Energia IA</CardTitle>
+        <CardTitle className="text-2xl">Astro IA</CardTitle>
         <CardDescription>Faça login para acessar o assistente inteligente</CardDescription>
       </CardHeader>
       <CardContent>

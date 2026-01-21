@@ -117,8 +117,8 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
           {!sidebarCollapsed && (
             <Image
-              src={`${SUPABASE_STORAGE_URL}/logo-vora-verde-branco.png`}
-              alt="VORA Energia"
+              src={`${SUPABASE_STORAGE_URL}/astro_logo_branco.svg`}
+              alt="Astro"
               width={140}
               height={32}
               className="h-8 w-auto"

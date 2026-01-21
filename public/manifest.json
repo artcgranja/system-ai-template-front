@@ -1,7 +1,7 @@
 {
-  "name": "VORA Energia IA - Assistente Inteligente",
-  "short_name": "VORA Energia IA",
-  "description": "Assistente de IA especializado em gestão de energia para gestores",
+  "name": "Astro IA - Assistente Inteligente",
+  "short_name": "Astro IA",
+  "description": "Assistente de IA inteligente para gestores",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -9,13 +9,19 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "https://gswjkjuftdikymnqbnmm.supabase.co/storage/v1/object/public/public_img/icon-192.png",
+      "src": "https://rzhynabxboavikxppwap.supabase.co/storage/v1/object/public/astro-img/astro-icon_branco.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://gswjkjuftdikymnqbnmm.supabase.co/storage/v1/object/public/public_img/icon-512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

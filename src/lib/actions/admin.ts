@@ -37,7 +37,7 @@ import {
  */
 async function getAuthHeaders(): Promise<HeadersInit> {
   const cookieStore = await cookies();
-  const token = cookieStore.get('vora_access_token')?.value;
+  const token = cookieStore.get('astro_access_token')?.value;
 
   return {
     'Content-Type': 'application/json',

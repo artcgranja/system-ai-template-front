@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { COOKIE_NAME, REFRESH_COOKIE_NAME } from '@/config/constants';
 
 /**
  * Decode JWT payload without verification (edge runtime compatible)
@@ -48,7 +49,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Get token from cookie
-  const token = request.cookies.get('vora_access_token')?.value;
+  const token = request.cookies.get(COOKIE_NAME)?.value;
 
   // Protected routes that require authentication
   const isProtectedRoute =
@@ -74,8 +75,8 @@ export function middleware(request: NextRequest) {
     // Clear the invalid/expired token cookie
     const response = NextResponse.redirect(loginUrl);
     if (token && (!tokenValidation.isValid || tokenValidation.isExpired)) {
-      response.cookies.delete('vora_access_token');
-      response.cookies.delete('vora_refresh_token');
+      response.cookies.delete(COOKIE_NAME);
+      response.cookies.delete(REFRESH_COOKIE_NAME);
     }
 
     return response;

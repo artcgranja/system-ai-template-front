@@ -3,7 +3,7 @@
  * Handles file upload and processing status for chat attachments
  */
 
-import { API_CONFIG, STORAGE_KEYS, ROUTES } from '@/config/constants';
+import { API_CONFIG, STORAGE_KEYS, ROUTES, COOKIE_NAME } from '@/config/constants';
 import { getAccessToken, getRefreshToken } from '@/lib/utils/auth';
 import type {
   Attachment,
@@ -62,7 +62,7 @@ async function refreshTokenAndGetNew(): Promise<string | null> {
       const expiryDays = 30;
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + expiryDays);
-      document.cookie = `vora_access_token=${access_token}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
+      document.cookie = `${COOKIE_NAME}=${access_token}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
     }
 
     return access_token;
@@ -79,7 +79,7 @@ function clearAuthAndRedirect(): void {
     localStorage.removeItem(STORAGE_KEYS.accessToken);
     localStorage.removeItem(STORAGE_KEYS.refreshToken);
     localStorage.removeItem(STORAGE_KEYS.user);
-    document.cookie = 'vora_access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = `${COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
     window.location.href = ROUTES.login;
   }
 }

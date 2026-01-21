@@ -19,15 +19,15 @@ interface DepartmentBreakdownProps {
   isLoading?: boolean;
 }
 
-const VORA_COLORS = [
-  '#00f494', // Cyan VORA (primario)
-  '#6e4df9', // Roxo
-  '#00d9c0', // Cyan claro
+const ASTRO_COLORS = [
+  '#4F739E', // astro-500 - Astro Steel Blue (primário)
+  '#6b8bb5', // astro-400 - Astro Steel Blue claro
+  '#8daec9', // astro-300 - Astro Steel Blue mais claro
+  '#6e4df9', // Roxo (mantido para diferenciação)
   '#ff8c42', // Laranja
   '#2e6cff', // Azul Royal
   '#ffdd00', // Amarelo
   '#ff4242', // Vermelho
-  '#133959', // Azul marinho
 ];
 
 function formatNumber(value: number): string {
@@ -128,7 +128,7 @@ export function DepartmentBreakdown({ departments, isLoading }: DepartmentBreakd
               />
               <Bar dataKey="tokens" radius={[0, 4, 4, 0]}>
                 {chartData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={VORA_COLORS[index % VORA_COLORS.length]} />
+                  <Cell key={`cell-${index}`} fill={ASTRO_COLORS[index % ASTRO_COLORS.length]} />
                 ))}
               </Bar>
             </BarChart>

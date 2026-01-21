@@ -547,14 +547,14 @@ export function ConversationSidebar({
 
   const activeConversation = (conversations || []).find((c) => c.id === activeId);
 
-  // VORA brand folder colors
+  // Astro Steel Blue folder colors
   const folderColors = [
     '#6b7785', // Cinza (padrão)
     '#ff4242', // Vermelho
     '#ff8c42', // Laranja
     '#ffdd00', // Amarelo
-    '#00f494', // Cyan VORA
-    '#00d9c0', // Cyan claro
+    '#4F739E', // astro-500 - Astro Steel Blue
+    '#6b8bb5', // astro-400 - Astro Steel Blue claro
     '#2e6cff', // Azul
     '#6e4df9', // Roxo
     '#133959', // Azul marinho

@@ -166,16 +166,16 @@ export function ChartViewer({ data }: ChartViewerProps) {
   const ChartComponent = hasDateColumn ? LineChart : BarChart;
   const DataComponent = hasDateColumn ? Line : Bar;
 
-  // Color palette for multiple series (VORA brand)
+  // Color palette for multiple series (Astro Steel Blue)
   const colors = [
-    '#00f494', // Cyan VORA (primário)
-    '#00d9c0', // Cyan claro
-    '#6e4df9', // Roxo
+    '#4F739E', // astro-500 - Astro Steel Blue (primário)
+    '#6b8bb5', // astro-400 - Astro Steel Blue claro
+    '#8daec9', // astro-300 - Astro Steel Blue mais claro
+    '#6e4df9', // Roxo (mantido para diferenciação)
     '#ff4242', // Vermelho
     '#ff8c42', // Laranja
     '#ffdd00', // Amarelo
     '#2e6cff', // Azul Royal
-    '#133959', // Azul marinho
   ];
 
   return (

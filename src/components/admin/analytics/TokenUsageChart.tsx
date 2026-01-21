@@ -28,10 +28,10 @@ interface TokenUsageChartProps {
   onGroupByChange?: (groupBy: AnalyticsGroupBy) => void;
 }
 
-const VORA_COLORS = {
-  primary: '#00f494',
-  secondary: '#6e4df9',
-  tertiary: '#00d9c0',
+const ASTRO_COLORS = {
+  primary: '#4F739E', // astro-500 - Astro Steel Blue
+  secondary: '#6b8bb5', // astro-400 - Astro Steel Blue claro
+  tertiary: '#8daec9', // astro-300 - Astro Steel Blue mais claro
 };
 
 function formatNumber(value: number): string {
@@ -145,11 +145,11 @@ export function TokenUsageChart({
             }}
           />
           {viewMode === 'total' ? (
-            <Bar dataKey="normalizedTokens" fill={VORA_COLORS.primary} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="normalizedTokens" fill={ASTRO_COLORS.primary} radius={[4, 4, 0, 0]} />
           ) : (
             <>
-              <Bar dataKey="inputTokens" stackId="1" fill={VORA_COLORS.secondary} radius={[0, 0, 0, 0]} />
-              <Bar dataKey="outputTokens" stackId="1" fill={VORA_COLORS.tertiary} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="inputTokens" stackId="1" fill={ASTRO_COLORS.secondary} radius={[0, 0, 0, 0]} />
+              <Bar dataKey="outputTokens" stackId="1" fill={ASTRO_COLORS.tertiary} radius={[4, 4, 0, 0]} />
             </>
           )}
         </BarChart>
@@ -160,16 +160,16 @@ export function TokenUsageChart({
       <AreaChart {...commonChartProps}>
         <defs>
           <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={VORA_COLORS.primary} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={VORA_COLORS.primary} stopOpacity={0} />
+            <stop offset="5%" stopColor={ASTRO_COLORS.primary} stopOpacity={0.3} />
+            <stop offset="95%" stopColor={ASTRO_COLORS.primary} stopOpacity={0} />
           </linearGradient>
           <linearGradient id="colorInput" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={VORA_COLORS.secondary} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={VORA_COLORS.secondary} stopOpacity={0} />
+            <stop offset="5%" stopColor={ASTRO_COLORS.secondary} stopOpacity={0.3} />
+            <stop offset="95%" stopColor={ASTRO_COLORS.secondary} stopOpacity={0} />
           </linearGradient>
           <linearGradient id="colorOutput" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={VORA_COLORS.tertiary} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={VORA_COLORS.tertiary} stopOpacity={0} />
+            <stop offset="5%" stopColor={ASTRO_COLORS.tertiary} stopOpacity={0.3} />
+            <stop offset="95%" stopColor={ASTRO_COLORS.tertiary} stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -220,7 +220,7 @@ export function TokenUsageChart({
           <Area
             type="monotone"
             dataKey="normalizedTokens"
-            stroke={VORA_COLORS.primary}
+            stroke={ASTRO_COLORS.primary}
             strokeWidth={2}
             fillOpacity={1}
             fill="url(#colorTotal)"
@@ -230,7 +230,7 @@ export function TokenUsageChart({
             <Area
               type="monotone"
               dataKey="inputTokens"
-              stroke={VORA_COLORS.secondary}
+              stroke={ASTRO_COLORS.secondary}
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorInput)"
@@ -238,7 +238,7 @@ export function TokenUsageChart({
             <Area
               type="monotone"
               dataKey="outputTokens"
-              stroke={VORA_COLORS.tertiary}
+              stroke={ASTRO_COLORS.tertiary}
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorOutput)"

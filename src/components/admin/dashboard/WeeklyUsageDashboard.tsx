@@ -21,10 +21,10 @@ interface WeeklyUsageDashboardProps {
   weeklyUsage: WeeklyUsage;
 }
 
-const VORA_COLORS = {
-  primary: '#00f494',
-  secondary: '#6e4df9',
-  tertiary: '#00d9c0',
+const ASTRO_COLORS = {
+  primary: '#4F739E', // astro-500 - Astro Steel Blue
+  secondary: '#6b8bb5', // astro-400 - Astro Steel Blue claro
+  tertiary: '#8daec9', // astro-300 - Astro Steel Blue mais claro
 };
 
 function formatNumber(value: number): string {
@@ -180,8 +180,8 @@ export function WeeklyUsageDashboard({ weeklyUsage }: WeeklyUsageDashboardProps)
               >
                 <defs>
                   <linearGradient id="colorNormalized" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={VORA_COLORS.primary} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={VORA_COLORS.primary} stopOpacity={0} />
+                    <stop offset="5%" stopColor={ASTRO_COLORS.primary} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={ASTRO_COLORS.primary} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -219,7 +219,7 @@ export function WeeklyUsageDashboard({ weeklyUsage }: WeeklyUsageDashboardProps)
                 <Area
                   type="monotone"
                   dataKey="normalizedTokens"
-                  stroke={VORA_COLORS.primary}
+                  stroke={ASTRO_COLORS.primary}
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorNormalized)"

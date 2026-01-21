@@ -15,6 +15,7 @@ import { useFolders } from '@/lib/hooks/useFolders';
 import { useKeyboardShortcuts } from '@/lib/hooks/useKeyboardShortcuts';
 import { useChatStore } from '@/lib/stores/chatStore';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { ROUTES, SUPABASE_STORAGE_URL } from '@/config/constants';
 import { cn } from '@/lib/utils';
 
@@ -35,6 +36,7 @@ interface SidebarProps {
 export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const { createFolder, updateFolder, deleteFolder, isOperationLoading: isFolderOperationLoading } = useFolders();
   const router = useRouter();
+  const { theme, resolvedTheme } = useTheme();
   const { sidebarCollapsed, toggleSidebar, folders } = useChatStore(
     useShallow((state) => ({
       sidebarCollapsed: state.sidebarCollapsed,
@@ -42,6 +44,12 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
       folders: state.folders,
     }))
   );
+
+  // Determine logo based on theme: dark logo for light theme, white logo for dark theme
+  const isDarkMode = resolvedTheme === 'dark' || (theme === 'system' && resolvedTheme === 'dark');
+  const logoSrc = isDarkMode 
+    ? `${SUPABASE_STORAGE_URL}/astro_logo_branco.svg`
+    : `${SUPABASE_STORAGE_URL}/astro_logo.svg`;
 
   // Local UI state
   const [helpOpen, setHelpOpen] = useState(false);
@@ -117,7 +125,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
           {!sidebarCollapsed && (
             <Image
-              src={`${SUPABASE_STORAGE_URL}/astro_logo_branco.svg`}
+              src={logoSrc}
               alt="Astro"
               width={140}
               height={32}

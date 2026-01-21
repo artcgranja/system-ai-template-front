@@ -14,12 +14,12 @@
     --sidebar-foreground: 240 5% 96%;
     /* Bordas da sidebar sempre iguais ao tema escuro */
     --sidebar-border: 240 5% 25%;
-    /* Separadores sempre escuros */
-    --separator: 240 5% 25%;
+    /* Separadores - neutral-300 no tema claro para contraste adequado (3:1 WCAG) */
+    --separator: 210 33% 85%;
     /* Card com branco puro para diferenciação clara */
     --card: 0 0% 100%;
     --card-foreground: 210 33% 23%;
-    /* Popover com branco puro */
+    /* Popover com branco puro e borda escura para melhor contraste WCAG 2.2 */
     --popover: 0 0% 100%;
     --popover-foreground: 210 33% 23%;
     /* Astro Steel Blue (astro-500) para elementos principais */
@@ -181,16 +181,25 @@
     background-color: hsl(var(--sidebar-border));
   }
 
-  /* Separadores dentro de popovers (dropdowns) devem usar cor escura */
+  /* Separadores dentro de popovers (dropdowns) - tema claro usa separator, tema escuro usa sidebar-border */
   [class*="bg-popover"] .bg-muted[class*="h-px"],
   .bg-popover .bg-muted[class*="h-px"],
   [class*="bg-popover"] [class*="h-px"][class*="bg-muted"],
   .bg-popover [class*="h-px"][class*="bg-muted"] {
-    background-color: hsl(var(--sidebar-border));
+    background-color: hsl(var(--separator));
   }
 
-  /* Garantir que dropdowns usem cores escuras */
+  /* Garantir que dropdowns usem separator no tema claro */
   [class*="DropdownMenuContent"] .bg-muted[class*="h-px"] {
+    background-color: hsl(var(--separator));
+  }
+
+  /* No tema escuro, separadores de popover usam sidebar-border */
+  .dark [class*="bg-popover"] .bg-muted[class*="h-px"],
+  .dark .bg-popover .bg-muted[class*="h-px"],
+  .dark [class*="bg-popover"] [class*="h-px"][class*="bg-muted"],
+  .dark .bg-popover [class*="h-px"][class*="bg-muted"],
+  .dark [class*="DropdownMenuContent"] .bg-muted[class*="h-px"] {
     background-color: hsl(var(--sidebar-border));
   }
 

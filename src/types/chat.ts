@@ -250,12 +250,27 @@ export interface ToolContentChunkEvent {
 }
 
 // Plan-specific SSE events (for LangGraph interrupt pattern)
+export interface ClarificationNeededEvent {
+  type: 'clarification_questions';
+  context: string;
+  questions: Array<{
+    id: string;
+    question: string;
+    type: string;
+    options?: Array<{ value: string; label: string; description?: string }>;
+  }>;
+  /** Tool call ID that triggered this interrupt (for tracking multiple parallel interrupts) */
+  call_id?: string;
+}
+
 export interface PlanAwaitingApprovalEvent {
   plan_id: string;
   markdown: string;
   version: number;
   thread_id: string;
   message: string;
+  /** Tool call ID that triggered this interrupt (for tracking multiple parallel interrupts) */
+  call_id?: string;
 }
 
 export interface PlanProcessingEvent {
@@ -304,6 +319,7 @@ export type SSEEvent =
   | { event: 'tool_call_execution'; data: ToolCallExecutionEvent }
   | { event: 'tool_content_chunk'; data: ToolContentChunkEvent }
   | { event: 'tool_call_complete'; data: ToolCallCompleteEvent }
+  | { event: 'clarification_needed'; data: ClarificationNeededEvent }
   | { event: 'plan_awaiting_approval'; data: PlanAwaitingApprovalEvent }
   | { event: 'plan_processing'; data: PlanProcessingEvent }
   | { event: 'plan_generating'; data: PlanGeneratingEvent }

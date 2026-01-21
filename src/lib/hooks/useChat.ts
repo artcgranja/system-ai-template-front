@@ -105,6 +105,9 @@ async function processStreamEvents(
   let pendingTextUpdate = false;
   const TEXT_CONTENT_FLUSH_INTERVAL = 50; // ms - batch text updates every 50ms
 
+  // Backend contract: call_id is REQUIRED and always present in interrupt events.
+  // This allows accurate tool call identification even with multiple parallel interrupts.
+
   // Flush tool content buffer to store
   const flushToolContentBuffer = () => {
     if (toolContentFlushTimer) {
@@ -561,15 +564,18 @@ async function processStreamEvents(
 
           // Handle plan_awaiting_approval event (LangGraph interrupt pattern)
           // New architecture (2026): This event now comes from request_plan_approval tool
-          // (not from create_plan or edit_plan which don't trigger interrupts anymore)
-          // The event is emitted when the backend pauses for user approval
+          // Backend contract: call_id is REQUIRED and always present in this event
           if (eventType === 'plan_awaiting_approval') {
+            // Backend always sends call_id, which allows accurate tool call identification
+            // even when multiple parallel interrupts occur
             completeRunningToolCallForInterrupt(
               currentConversationId,
               currentAssistantMessageId,
               INTERRUPT_MESSAGES.PLAN_APPROVAL,
               getMessages,
-              completeToolCall
+              completeToolCall,
+              parsed.call_id, // REQUIRED: Backend always sends this
+              'request_plan_approval' // Fallback only (should not be needed)
             );
 
             const { setActivePlan, setActiveInterrupt } = useChatStore.getState();
@@ -579,14 +585,18 @@ async function processStreamEvents(
           }
 
           // Handle clarification_needed event (LangGraph interrupt pattern)
-          // This event is emitted when the agent needs more information from the user
+          // Backend contract: call_id is REQUIRED and always present in this event
           if (eventType === 'clarification_needed') {
+            // Backend always sends call_id, which allows accurate tool call identification
+            // even when multiple parallel interrupts occur
             completeRunningToolCallForInterrupt(
               currentConversationId,
               currentAssistantMessageId,
               INTERRUPT_MESSAGES.CLARIFICATION,
               getMessages,
-              completeToolCall
+              completeToolCall,
+              parsed.call_id, // REQUIRED: Backend always sends this
+              'ask_clarifying_questions' // Fallback only (should not be needed)
             );
 
             const { setActiveInterrupt } = useChatStore.getState();
@@ -602,21 +612,27 @@ async function processStreamEvents(
             const interruptType = parsed.type as 'clarification_questions' | 'plan_approval';
 
             if (interruptType === 'clarification_questions') {
+              // Pass call_id and tool_name for accurate tool call identification
               completeRunningToolCallForInterrupt(
                 currentConversationId,
                 currentAssistantMessageId,
                 INTERRUPT_MESSAGES.CLARIFICATION,
                 getMessages,
-                completeToolCall
+                completeToolCall,
+                parsed.call_id, // May be available in generic interrupt format
+                'ask_clarifying_questions'
               );
               setupClarificationInterrupt(parsed, currentConversationId, setActiveInterrupt);
             } else if (interruptType === 'plan_approval') {
+              // Pass call_id and tool_name for accurate tool call identification
               completeRunningToolCallForInterrupt(
                 currentConversationId,
                 currentAssistantMessageId,
                 INTERRUPT_MESSAGES.PLAN_APPROVAL,
                 getMessages,
-                completeToolCall
+                completeToolCall,
+                parsed.call_id, // May be available in generic interrupt format
+                'request_plan_approval'
               );
               setupPlanApprovalInterrupt(parsed, currentConversationId, setActivePlan, setActiveInterrupt);
             } else {
@@ -877,17 +893,76 @@ function handleToolCallComplete(
   getMessages: (conversationId: string) => Message[]
 ): void {
   const messages = getMessages(conversationId);
-  const message = messages.find((msg) => msg.id === messageId);
+  let message = messages.find((msg) => msg.id === messageId);
 
-  if (!message || !message.toolCalls) return;
+  if (!message || !message.toolCalls) {
+    // Message not found or has no tool calls - search all messages
+    // This handles cases where backend sends wrong messageId or tool calls are in different message
+    if (callId) {
+      for (const msg of messages) {
+        const toolCall = msg.toolCalls?.find(tc => tc.id === callId);
+        if (toolCall) {
+          message = msg;
+          break;
+        }
+      }
+    } else if (toolName) {
+      // Find most recent message with running tool call matching tool_name
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const msg = messages[i];
+        const toolCall = msg.toolCalls?.find(tc => 
+          tc.tool_name === toolName && tc.status === 'running'
+        );
+        if (toolCall) {
+          message = msg;
+          break;
+        }
+      }
+    }
+  }
 
-  // Find tool call by call_id or tool_name
-  const toolCall = message.toolCalls.find(tc =>
-    callId ? tc.id === callId : tc.tool_name === toolName
-  );
+  if (!message || !message.toolCalls) {
+    console.warn(
+      `[ToolCallComplete] Message not found or has no tool calls. ` +
+      `Message ID: ${messageId}, call_id: ${callId || 'none'}, tool_name: ${toolName}. ` +
+      `Available messages: ${messages.map(m => `${m.id}(${m.toolCalls?.length || 0} tool calls)`).join(', ')}`
+    );
+    return;
+  }
+
+  // Find tool call by call_id (preferred) or tool_name (fallback)
+  let toolCall = callId 
+    ? message.toolCalls.find(tc => tc.id === callId)
+    : message.toolCalls.find(tc => tc.tool_name === toolName && tc.status === 'running');
+
+  // If not found and call_id provided, search all messages (handles backend sending wrong call_id)
+  if (!toolCall && callId) {
+    for (const msg of messages) {
+      toolCall = msg.toolCalls?.find(tc => tc.id === callId);
+      if (toolCall) {
+        message = msg;
+        break;
+      }
+    }
+  }
 
   if (toolCall) {
-    completeToolCall(conversationId, messageId, toolCall.id, result, success, executionTime, error);
+    // Only complete if tool call is still running (avoid double completion)
+    if (toolCall.status === 'running') {
+      completeToolCall(conversationId, message.id, toolCall.id, result, success, executionTime, error);
+    } else {
+      console.info(
+        `[ToolCallComplete] Tool call ${toolCall.id} already completed (status: ${toolCall.status}). ` +
+        `Skipping duplicate completion.`
+      );
+    }
+  } else {
+    const toolCallsList = message.toolCalls?.map(tc => `${tc.tool_name}(${tc.id}, status: ${tc.status})`).join(', ') || 'none';
+    console.warn(
+      `[ToolCallComplete] Tool call not found. ` +
+      `Message ID: ${message.id}, call_id: ${callId || 'none'}, tool_name: ${toolName}. ` +
+      `Available tool calls: ${toolCallsList}`
+    );
   }
 }
 

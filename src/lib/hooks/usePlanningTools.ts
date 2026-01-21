@@ -642,13 +642,16 @@ async function processResumeStream(
           // INTERRUPT EVENTS
           // ================================================================
 
+          // Backend contract: call_id is REQUIRED and always present
           if (eventType === 'plan_awaiting_approval') {
             completeRunningToolCallForInterrupt(
               conversationId,
               assistantMessageId,
               INTERRUPT_MESSAGES.PLAN_APPROVAL,
               getMessages,
-              completeToolCall
+              completeToolCall,
+              parsed.call_id, // REQUIRED: Backend always sends this
+              'request_plan_approval' // Fallback only
             );
             setupPlanApprovalInterrupt(
               parsed,

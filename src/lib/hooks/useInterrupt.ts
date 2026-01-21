@@ -646,26 +646,32 @@ async function processResumeStream(
           // ================================================================
 
           // Handle plan_awaiting_approval interrupt
+          // Backend contract: call_id is REQUIRED and always present
           if (eventType === 'plan_awaiting_approval') {
             completeRunningToolCallForInterrupt(
               conversationId,
               assistantMessageId,
               INTERRUPT_MESSAGES.PLAN_APPROVAL,
               getMessages,
-              completeToolCall
+              completeToolCall,
+              parsed.call_id, // REQUIRED: Backend always sends this
+              'request_plan_approval' // Fallback only
             );
             setupPlanApprovalInterrupt(parsed, conversationId, setActivePlan, setActiveInterrupt);
             continue;
           }
 
           // Handle clarification_needed event (LangGraph interrupt pattern)
+          // Backend contract: call_id is REQUIRED and always present
           if (eventType === 'clarification_needed') {
             completeRunningToolCallForInterrupt(
               conversationId,
               assistantMessageId,
               INTERRUPT_MESSAGES.CLARIFICATION,
               getMessages,
-              completeToolCall
+              completeToolCall,
+              parsed.call_id, // REQUIRED: Backend always sends this
+              'ask_clarifying_questions' // Fallback only
             );
             setupClarificationInterrupt(parsed, conversationId, setActiveInterrupt);
             continue;
@@ -682,7 +688,9 @@ async function processResumeStream(
                 assistantMessageId,
                 INTERRUPT_MESSAGES.CLARIFICATION,
                 getMessages,
-                completeToolCall
+                completeToolCall,
+                parsed.call_id, // REQUIRED: Backend always sends this
+                'ask_clarifying_questions' // Fallback only
               );
               setupClarificationInterrupt(parsed, conversationId, setActiveInterrupt);
             } else if (interruptType === 'plan_approval') {
@@ -691,7 +699,9 @@ async function processResumeStream(
                 assistantMessageId,
                 INTERRUPT_MESSAGES.PLAN_APPROVAL,
                 getMessages,
-                completeToolCall
+                completeToolCall,
+                parsed.call_id, // REQUIRED: Backend always sends this
+                'request_plan_approval' // Fallback only
               );
               setupPlanApprovalInterrupt(parsed, conversationId, setActivePlan, setActiveInterrupt);
             } else {

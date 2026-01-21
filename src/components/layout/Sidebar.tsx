@@ -127,9 +127,9 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
             <Image
               src={logoSrc}
               alt="Astro"
-              width={140}
-              height={32}
-              className="h-8 w-auto"
+              width={105}
+              height={24}
+              className="h-6 w-auto"
             />
           )}
 

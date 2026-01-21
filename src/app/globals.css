@@ -8,12 +8,12 @@
     --background: 210 33% 98%;
     /* Foreground - Slate-800 (neutral-800) para texto principal */
     --foreground: 210 33% 23%;
-    /* Sidebar com a mesma cor do tema escuro (charcoal-800) */
-    --sidebar-background: 240 5% 13%;
-    /* Texto da sidebar sempre claro (mesmo no tema claro) */
-    --sidebar-foreground: 240 5% 96%;
-    /* Bordas da sidebar sempre iguais ao tema escuro */
-    --sidebar-border: 240 5% 25%;
+    /* Sidebar branco no tema claro */
+    --sidebar-background: 0 0% 100%;
+    /* Texto da sidebar escuro no tema claro */
+    --sidebar-foreground: 210 33% 23%;
+    /* Bordas da sidebar claras no tema claro */
+    --sidebar-border: 210 33% 90%;
     /* Separadores - neutral-300 no tema claro para contraste adequado (3:1 WCAG) */
     --separator: 210 33% 85%;
     /* Card com branco puro para diferenciação clara */
@@ -133,7 +133,7 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Sidebar sempre com texto claro, mesmo no tema claro */
+  /* Sidebar - texto usa sidebar-foreground (escuro no light, claro no dark) */
   [class*="bg-sidebar-background"] .text-muted-foreground,
   .bg-sidebar-background .text-muted-foreground,
   [class*="bg-sidebar-background"] button.text-muted-foreground,
@@ -141,7 +141,7 @@
     color: hsl(var(--sidebar-foreground) / 0.7);
   }
 
-  /* Garantir que textos e ícones dentro da sidebar sejam claros */
+  /* Garantir que textos e ícones dentro da sidebar usem sidebar-foreground */
   [class*="bg-sidebar-background"] span:not([class*="text-"]),
   .bg-sidebar-background span:not([class*="text-"]) {
     color: hsl(var(--sidebar-foreground));
@@ -153,7 +153,7 @@
     color: hsl(var(--sidebar-foreground));
   }
 
-  /* Elementos muted dentro da sidebar devem usar cor escura */
+  /* Elementos muted dentro da sidebar usam sidebar-border */
   [class*="bg-sidebar-background"] .bg-muted,
   .bg-sidebar-background .bg-muted {
     background-color: hsl(var(--sidebar-border));

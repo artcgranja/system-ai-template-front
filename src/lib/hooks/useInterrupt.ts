@@ -25,7 +25,6 @@ import {
 } from '@/lib/utils/interruptHelpers';
 import {
   isPresentationGenerationTool,
-  isApprovalRequestTool,
   parsePlanningToolResult,
   normalizePresentationFiles,
 } from '@/lib/utils/planningTools';
@@ -469,14 +468,8 @@ async function processResumeStream(
           }
 
           // Handle tool_call_start
+          // Note: Duplicate protection is handled by addToolCallToMessage (checks by toolCallId)
           if (eventType === 'tool_call_start' && parsed.tool_name) {
-            // Skip tool_call_start for approval request tools during resume
-            // These tools were already completed in the original stream with "Aguardando aprovação..."
-            // The backend sends them again during resume, but we don't want duplicate tool calls
-            if (isApprovalRequestTool(parsed.tool_name)) {
-              continue;
-            }
-
             if (!assistantMessageCreated) {
               // Create new message for the resume response
               assistantMessageCreated = true;
@@ -508,11 +501,6 @@ async function processResumeStream(
 
           // Handle tool_call_execution
           if (eventType === 'tool_call_execution' && parsed.tool_name) {
-            // Skip for approval request tools (already completed in original stream)
-            if (isApprovalRequestTool(parsed.tool_name)) {
-              continue;
-            }
-
             const messages = getMessages(conversationId);
             const message = messages.find((m) => m.id === assistantMessageId);
             const toolCall = message?.toolCalls?.find(
@@ -526,11 +514,6 @@ async function processResumeStream(
 
           // Handle tool_content_chunk
           if (eventType === 'tool_content_chunk' && parsed.tool_name && parsed.content) {
-            // Skip for approval request tools (already completed in original stream)
-            if (isApprovalRequestTool(parsed.tool_name)) {
-              continue;
-            }
-
             const messages = getMessages(conversationId);
             const message = messages.find((m) => m.id === assistantMessageId);
             const toolCall = message?.toolCalls?.find(
@@ -551,11 +534,6 @@ async function processResumeStream(
           // Note: Interrupt detection via error field is DEPRECATED
           // Interrupts now come as separate SSE events (clarification_needed, plan_awaiting_approval)
           if (eventType === 'tool_call_complete' && parsed.tool_name) {
-            // Skip for approval request tools (already completed in original stream)
-            if (isApprovalRequestTool(parsed.tool_name)) {
-              continue;
-            }
-
             const messages = getMessages(conversationId);
             const message = messages.find((m) => m.id === assistantMessageId);
             const toolCall = message?.toolCalls?.find(

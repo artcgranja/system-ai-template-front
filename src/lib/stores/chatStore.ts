@@ -257,25 +257,31 @@ export const useChatStore = create<ChatState>()(
         set((state) => ({
           messages: {
             ...state.messages,
-            [conversationId]: state.messages[conversationId]?.map((msg) =>
-              msg.id === messageId
-                ? {
-                    ...msg,
-                    toolCalls: [
-                      ...(msg.toolCalls || []),
-                      {
-                        id: toolCallId,
-                        tool_name: toolName,
-                        arguments: args,
-                        status: 'starting' as const,
-                      },
-                    ],
-                    // Add reference to contentBlockRefs (order tracking)
-                    // The actual toolCall data is derived from toolCalls[] at render time
-                    contentBlockRefs: appendToolCallBlockRef(msg.contentBlockRefs, toolCallId),
-                  }
-                : msg
-            ) || [],
+            [conversationId]: state.messages[conversationId]?.map((msg) => {
+              if (msg.id !== messageId) return msg;
+
+              // Skip if tool call with this ID already exists (prevents duplicates)
+              const existingToolCall = msg.toolCalls?.find(tc => tc.id === toolCallId);
+              if (existingToolCall) {
+                return msg;
+              }
+
+              return {
+                ...msg,
+                toolCalls: [
+                  ...(msg.toolCalls || []),
+                  {
+                    id: toolCallId,
+                    tool_name: toolName,
+                    arguments: args,
+                    status: 'starting' as const,
+                  },
+                ],
+                // Add reference to contentBlockRefs (order tracking)
+                // The actual toolCall data is derived from toolCalls[] at render time
+                contentBlockRefs: appendToolCallBlockRef(msg.contentBlockRefs, toolCallId),
+              };
+            }) || [],
           },
         })),
 

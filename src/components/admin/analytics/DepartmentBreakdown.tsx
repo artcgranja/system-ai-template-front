@@ -103,11 +103,12 @@ export function DepartmentBreakdown({ departments, isLoading }: DepartmentBreakd
                   boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                 }}
                 labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-                formatter={(value: number, _name: string, entry) => {
+                formatter={(value, _name, entry) => {
+                  const numValue = typeof value === 'number' ? value : 0;
                   const payload = entry.payload as { fullName: string; users: number; percentage: number };
                   return [
                     <div key="tooltip" className="space-y-1">
-                      <div>{formatNumber(value)} tokens</div>
+                      <div>{formatNumber(numValue)} tokens</div>
                       <div className="text-xs text-muted-foreground">
                         {payload.users} usuarios ativos
                       </div>

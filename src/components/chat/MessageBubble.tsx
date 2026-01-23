@@ -1,12 +1,10 @@
 'use client';
 
-import { memo, useDeferredValue, useMemo } from 'react';
-import ReactMarkdown, { Components } from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { memo, useMemo } from 'react';
 import type { Message, MessageAttachment } from '@/types/chat';
 import { cn } from '@/lib/utils';
 import { deriveContentBlocks, hasContentBlocks } from '@/lib/utils/contentBlocks';
-import { CodeBlock } from './CodeBlock';
+import { StreamingMarkdown } from './StreamingMarkdown';
 import { MessageActions } from './MessageActions';
 import { TypingIndicator } from './TypingIndicator';
 import { ToolCallIndicator } from './ToolCallIndicator';
@@ -73,108 +71,6 @@ function AttachmentPreview({ attachments, isUser }: { attachments: MessageAttach
   );
 }
 
-// Componentes reutilizáveis para renderização de Markdown
-// Garante consistência visual entre streaming e estado final
-const markdownComponents: Components = {
-  // Paragraphs
-  p: ({ children }) => (
-    <p className="mb-4 last:mb-0 text-[15px] leading-[1.75] text-foreground dark:text-foreground/90">
-      {children}
-    </p>
-  ),
-  // Lists
-  ul: ({ children }) => (
-    <ul className="mb-4 ml-6 list-disc space-y-2 marker:text-muted-foreground/60">
-      {children}
-    </ul>
-  ),
-  ol: ({ children }) => (
-    <ol className="mb-4 ml-6 list-decimal space-y-2 marker:text-muted-foreground/60">
-      {children}
-    </ol>
-  ),
-  li: ({ children }) => (
-    <li className="leading-[1.75] text-[15px] text-foreground dark:text-foreground/90 pl-2">
-      {children}
-    </li>
-  ),
-  // Headings - Updated sizes per requirements
-  h1: ({ children }) => (
-    <h1 className="mb-4 mt-6 text-2xl font-semibold tracking-tight text-foreground dark:text-foreground first:mt-0">
-      {children}
-    </h1>
-  ),
-  h2: ({ children }) => (
-    <h2 className="mb-3 mt-5 text-[20px] font-semibold tracking-tight text-foreground dark:text-foreground first:mt-0">
-      {children}
-    </h2>
-  ),
-  h3: ({ children }) => (
-    <h3 className="mb-3 mt-4 text-[18px] font-semibold tracking-tight text-foreground dark:text-foreground first:mt-0">
-      {children}
-    </h3>
-  ),
-  // Code blocks
-  code: ({ className, children }) => {
-    const match = /language-(\w+)/.exec(className || '');
-    const inline = !match;
-    const code = String(children).replace(/\n$/, '');
-
-    if (inline) {
-      return <CodeBlock code={code} inline className={className} />;
-    }
-
-    return (
-      <CodeBlock language={match ? match[1] : 'text'} code={code} />
-    );
-  },
-  pre: ({ children }) => <>{children}</>,
-  // Links
-  a: ({ href, children }) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-primary hover:underline font-medium"
-    >
-      {children}
-    </a>
-  ),
-  // Blockquotes
-  blockquote: ({ children }) => (
-    <blockquote className="border-l-4 border-primary/30 pl-4 italic text-muted-foreground">
-      {children}
-    </blockquote>
-  ),
-  // Horizontal rule
-  hr: () => <hr className="my-6 border-border" />,
-  // Tables with zebra striping
-  table: ({ children }) => (
-    <div className="my-4 overflow-x-auto">
-      <table className="min-w-full divide-y divide-border">
-        {children}
-      </table>
-    </div>
-  ),
-  thead: ({ children }) => (
-    <thead className="bg-muted/50">{children}</thead>
-  ),
-  tbody: ({ children }) => (
-    <tbody className="divide-y divide-border">{children}</tbody>
-  ),
-  tr: ({ children }) => (
-    <tr className="even:bg-muted/30">{children}</tr>
-  ),
-  th: ({ children }) => (
-    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-foreground dark:text-foreground">
-      {children}
-    </th>
-  ),
-  td: ({ children }) => (
-    <td className="px-3 py-2 text-sm text-foreground dark:text-foreground">{children}</td>
-  ),
-};
-
 interface MessageBubbleProps {
   message: Message;
   onRegenerate?: () => void;
@@ -236,10 +132,6 @@ export const MessageBubble = memo(function MessageBubble({
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
 
-  // Defer markdown content rendering to keep UI responsive during streaming
-  // This allows React to interrupt markdown parsing for higher priority updates
-  const deferredContent = useDeferredValue(message.content);
-
   // Derive contentBlocks from contentBlockRefs + toolCalls (single source of truth pattern)
   // This combines the order info from refs with current tool call data
   // Using message as dependency since we access multiple properties
@@ -281,41 +173,21 @@ export const MessageBubble = memo(function MessageBubble({
         <div className="flex w-full">
           {/* Message Content */}
           <div className="flex-1 space-y-2 overflow-hidden min-w-0">
-            {/* Render traditional markdown when there are no content blocks */}
+            {/* Render markdown when there are no content blocks */}
             {!hasBlocks ? (
-              /* Message Content with improved typography */
-              <div
-                className={cn(
-                  'rounded-xl px-4 py-3',
-                  'bg-transparent dark:bg-transparent',
-                  'prose prose-sm dark:prose-invert max-w-none break-words',
-                  // Cores explícitas para tema claro, foreground para tema escuro
-                  'prose-p:leading-[1.75] prose-p:text-foreground dark:prose-p:text-foreground/90 prose-p:text-[15px]',
-                  'prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-foreground dark:prose-headings:text-foreground',
-                  'prose-a:text-primary prose-a:no-underline hover:prose-a:underline',
-                  'prose-code:text-foreground dark:prose-code:text-foreground prose-code:before:content-none prose-code:after:content-none',
-                  'prose-pre:bg-transparent prose-pre:p-0 prose-pre:m-0',
-                  'prose-strong:font-semibold prose-strong:text-foreground dark:prose-strong:text-foreground',
-                  'prose-em:text-foreground dark:prose-em:text-foreground',
-                  'prose-ul:my-3 prose-ol:my-3',
-                  'prose-li:text-foreground dark:prose-li:text-foreground',
-                  'relative'
-                )}
-              >
+              <div className="rounded-xl px-4 py-3 bg-transparent dark:bg-transparent relative">
                 {/* Typing indicator - positioned inside message box */}
                 {message.isStreaming && (
-                  <div className="absolute top-3 right-3">
+                  <div className="absolute top-3 right-3 z-10">
                     <TypingIndicator />
                   </div>
                 )}
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={markdownComponents}
-                >
-                  {deferredContent}
-                </ReactMarkdown>
-            </div>
-          ) : null}
+                <StreamingMarkdown
+                  content={message.content}
+                  isStreaming={message.isStreaming}
+                />
+              </div>
+            ) : null}
 
             {/* Content Blocks - Show text and tool calls in order (derived from contentBlockRefs + toolCalls) */}
             {isAssistant && hasBlocks ? (
@@ -323,26 +195,11 @@ export const MessageBubble = memo(function MessageBubble({
                 {contentBlocks.map((block, index) => {
                   if (block.type === 'text') {
                     return (
-                      <div key={`text-${index}`} className={cn(
-                        'rounded-xl px-4 py-3',
-                        'bg-transparent dark:bg-transparent',
-                        'prose prose-sm dark:prose-invert max-w-none break-words',
-                        'prose-p:leading-[1.75] prose-p:text-foreground dark:prose-p:text-foreground/90 prose-p:text-[15px]',
-                        'prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-foreground dark:prose-headings:text-foreground',
-                        'prose-a:text-primary prose-a:no-underline hover:prose-a:underline',
-                        'prose-code:text-foreground dark:prose-code:text-foreground prose-code:before:content-none prose-code:after:content-none',
-                        'prose-pre:bg-transparent prose-pre:p-0 prose-pre:m-0',
-                        'prose-strong:font-semibold prose-strong:text-foreground dark:prose-strong:text-foreground',
-                        'prose-em:text-foreground dark:prose-em:text-foreground',
-                        'prose-ul:my-3 prose-ol:my-3',
-                        'prose-li:text-foreground dark:prose-li:text-foreground',
-                      )}>
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          components={markdownComponents}
-                        >
-                          {block.content}
-                        </ReactMarkdown>
+                      <div key={`text-${index}`} className="rounded-xl px-4 py-3 bg-transparent dark:bg-transparent">
+                        <StreamingMarkdown
+                          content={block.content}
+                          isStreaming={false}
+                        />
                       </div>
                     );
                   } else if (block.type === 'tool_call') {
@@ -386,31 +243,15 @@ export const MessageBubble = memo(function MessageBubble({
                   // Only render if there's new streaming content that's not already in blocks
                   if (streamingText && streamingText.trim().length > 0) {
                     return (
-                      <div key="streaming-text" className={cn(
-                        'rounded-xl px-4 py-3',
-                        'bg-transparent dark:bg-transparent',
-                        'prose prose-sm dark:prose-invert max-w-none break-words',
-                        'prose-p:leading-[1.75] prose-p:text-foreground dark:prose-p:text-foreground/90 prose-p:text-[15px]',
-                        'prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-foreground dark:prose-headings:text-foreground',
-                        'prose-a:text-primary prose-a:no-underline hover:prose-a:underline',
-                        'prose-code:text-foreground dark:prose-code:text-foreground prose-code:before:content-none prose-code:after:content-none',
-                        'prose-pre:bg-transparent prose-pre:p-0 prose-pre:m-0',
-                        'prose-strong:font-semibold prose-strong:text-foreground dark:prose-strong:text-foreground',
-                        'prose-em:text-foreground dark:prose-em:text-foreground',
-                        'prose-ul:my-3 prose-ol:my-3',
-                        'prose-li:text-foreground dark:prose-li:text-foreground',
-                        'relative'
-                      )}>
+                      <div key="streaming-text" className="rounded-xl px-4 py-3 bg-transparent dark:bg-transparent relative">
                         {/* Typing indicator for streaming text */}
-                        <div className="absolute top-3 right-3">
+                        <div className="absolute top-3 right-3 z-10">
                           <TypingIndicator />
                         </div>
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          components={markdownComponents}
-                        >
-                          {streamingText}
-                        </ReactMarkdown>
+                        <StreamingMarkdown
+                          content={streamingText}
+                          isStreaming={true}
+                        />
                       </div>
                     );
                   }

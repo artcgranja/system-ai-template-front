@@ -164,7 +164,9 @@ export function DailyBreakdownChart({
               boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
             }}
             labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-            formatter={(value: number, name: string) => {
+            formatter={(value, name) => {
+              const numValue = typeof value === 'number' ? value : 0;
+              const nameStr = name as string;
               const labels: Record<string, string> = {
                 normalizedTokens: 'Tokens Normalizados',
                 totalTokens: 'Total de Tokens',
@@ -172,10 +174,10 @@ export function DailyBreakdownChart({
                 outputTokens: 'Tokens de Saida',
                 requestCount: 'Requisições',
               };
-              if (name === 'requestCount') {
-                return [value.toLocaleString('pt-BR'), labels[name] || name];
+              if (nameStr === 'requestCount') {
+                return [numValue.toLocaleString('pt-BR'), labels[nameStr] || nameStr];
               }
-              return [formatNumber(value), labels[name] || name];
+              return [formatNumber(numValue), labels[nameStr] || nameStr];
             }}
           />
           {viewMode === 'total' ? (
@@ -228,7 +230,9 @@ export function DailyBreakdownChart({
             boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
           }}
           labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-          formatter={(value: number, name: string) => {
+          formatter={(value, name) => {
+            const numValue = typeof value === 'number' ? value : 0;
+            const nameStr = name as string;
             const labels: Record<string, string> = {
               normalizedTokens: 'Tokens Normalizados',
               totalTokens: 'Total de Tokens',
@@ -236,10 +240,10 @@ export function DailyBreakdownChart({
               outputTokens: 'Tokens de Saida',
               requestCount: 'Requisições',
             };
-            if (name === 'requestCount') {
-              return [value.toLocaleString('pt-BR'), labels[name] || name];
+            if (nameStr === 'requestCount') {
+              return [numValue.toLocaleString('pt-BR'), labels[nameStr] || nameStr];
             }
-            return [formatNumber(value), labels[name] || name];
+            return [formatNumber(numValue), labels[nameStr] || nameStr];
           }}
         />
         {viewMode === 'total' ? (

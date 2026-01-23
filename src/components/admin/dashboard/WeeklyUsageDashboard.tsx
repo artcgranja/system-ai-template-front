@@ -21,7 +21,7 @@ interface WeeklyUsageDashboardProps {
   weeklyUsage: WeeklyUsage;
 }
 
-import { ASTRO_CHART_COLORS, CHART_PALETTE } from '@/config/chartColors';
+import { ASTRO_CHART_COLORS } from '@/config/chartColors';
 
 const ASTRO_COLORS = {
   primary: ASTRO_CHART_COLORS.primary,
@@ -208,14 +208,16 @@ export function WeeklyUsageDashboard({ weeklyUsage }: WeeklyUsageDashboardProps)
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                   }}
                   labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-                  formatter={(value: number, name: string) => {
+                  formatter={(value, name) => {
+                    const numValue = typeof value === 'number' ? value : 0;
+                    const nameStr = name as string;
                     const labels: Record<string, string> = {
                       normalizedTokens: 'Tokens Normalizados',
                       totalTokens: 'Total de Tokens',
                       requestCount: 'Requisicoes',
                       uniqueUsers: 'Usuarios Unicos',
                     };
-                    return [value.toLocaleString('pt-BR'), labels[name] || name];
+                    return [numValue.toLocaleString('pt-BR'), labels[nameStr] || nameStr];
                   }}
                 />
                 <Area

@@ -124,14 +124,15 @@ export function TokenUsageChart({
               boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
             }}
             labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-            formatter={(value: number, name: string) => {
+            formatter={(value, name) => {
+              const numValue = typeof value === 'number' ? value : 0;
               const labels: Record<string, string> = {
                 normalizedTokens: 'Tokens Normalizados',
                 totalTokens: 'Total de Tokens',
                 inputTokens: 'Tokens de Entrada',
                 outputTokens: 'Tokens de Saida',
               };
-              return [value.toLocaleString('pt-BR'), labels[name] || name];
+              return [numValue.toLocaleString('pt-BR'), labels[name as string] || name];
             }}
           />
           <Legend
@@ -196,14 +197,15 @@ export function TokenUsageChart({
             boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
           }}
           labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-          formatter={(value: number, name: string) => {
+          formatter={(value, name) => {
+            const numValue = typeof value === 'number' ? value : 0;
             const labels: Record<string, string> = {
               normalizedTokens: 'Tokens Normalizados',
               totalTokens: 'Total de Tokens',
               inputTokens: 'Tokens de Entrada',
               outputTokens: 'Tokens de Saida',
             };
-            return [value.toLocaleString('pt-BR'), labels[name] || name];
+            return [numValue.toLocaleString('pt-BR'), labels[name as string] || name];
           }}
         />
         <Legend

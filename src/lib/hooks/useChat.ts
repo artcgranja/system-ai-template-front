@@ -431,6 +431,11 @@ async function processStreamEvents(
 
           // Handle tool_call_start event
           if (eventType === 'tool_call_start') {
+            // Flush any pending text content before starting tool call
+            // This ensures text that was streamed but not yet committed (no text_block_complete)
+            // is saved as a content block BEFORE the tool call
+            flushTextContentBuffer();
+
             // Ensure assistant message exists
             if (!assistantMessageCreated) {
               assistantMessageCreated = true;
@@ -443,6 +448,16 @@ async function processStreamEvents(
             }
 
             if (parsed.tool_name) {
+              // Commit any pending text as a content block before adding tool call
+              // This handles the case where text streams between tool calls without text_block_complete
+              commitPendingTextAsBlock(
+                currentConversationId,
+                currentAssistantMessageId,
+                accumulatedContent,
+                getMessages,
+                updateMessage
+              );
+
               // addToolCallToMessage now automatically adds tool call ref to contentBlockRefs
               // No need to manually update contentBlocks - they are derived at render time
               handleToolCallStart(
@@ -795,6 +810,54 @@ function handleAssistantMessageComplete(
     updateMessage(conversationId, messageId, {
       content,
       isStreaming: false,
+    });
+  }
+}
+
+/**
+ * Commits any pending text as a content block before a tool call starts.
+ *
+ * This solves the problem where text streams between tool calls without a text_block_complete event.
+ * For example:
+ *   1. Text "Hello" streams via chunks → message.content = "Hello"
+ *   2. text_block_complete → contentBlockRefs = [{ type: 'text', content: 'Hello' }]
+ *   3. tool_call_start → contentBlockRefs = [text1, tool1]
+ *   4. Text "Fixing..." streams → message.content = "Hello Fixing..."
+ *   5. tool_call_start (NO text_block_complete!) → Text "Fixing..." would be LOST
+ *
+ * This function checks if there's uncommitted text and creates a text block ref for it.
+ *
+ * @see https://docs.anthropic.com/en/api/messages-streaming - Anthropic streaming content blocks
+ */
+function commitPendingTextAsBlock(
+  conversationId: string,
+  messageId: string,
+  accumulatedContent: string,
+  getMessages: (conversationId: string) => Message[],
+  updateMessage: (conversationId: string, messageId: string, updates: Partial<Message>) => void
+): void {
+  const messages = getMessages(conversationId);
+  const message = messages.find((msg) => msg.id === messageId);
+
+  if (!message) return;
+
+  // Calculate how much text is already committed to contentBlockRefs
+  const committedTextLength = (message.contentBlockRefs || [])
+    .filter((ref): ref is { type: 'text'; content: string } => ref.type === 'text')
+    .reduce((total, ref) => total + ref.content.length, 0);
+
+  // Get the pending text that hasn't been committed yet
+  const pendingText = accumulatedContent.slice(committedTextLength);
+
+  // Only create a text block if there's actual pending content
+  if (pendingText && pendingText.trim().length > 0) {
+    // appendTextBlockRef is imported at the top of the file
+    const updatedContentBlockRefs = appendTextBlockRef(message.contentBlockRefs, pendingText);
+
+    updateMessage(conversationId, messageId, {
+      content: accumulatedContent,
+      contentBlockRefs: updatedContentBlockRefs,
+      isStreaming: true,
     });
   }
 }

@@ -120,21 +120,22 @@ export function completeRunningToolCallForInterrupt(
   
   // If message not found or has no tool calls, search all messages for the tool call
   // This handles the case where interrupt is processed in resume stream but tool call is in original message
+  // NOTE: Accept both 'running' AND 'starting' status because interrupt may arrive before tool_call_execution
   if (!message?.toolCalls || message.toolCalls.length === 0) {
     // Search all messages for the tool call with matching call_id or tool_name
     if (callId) {
       for (const msg of messages) {
-        const toolCall = msg.toolCalls?.find((tc) => tc.id === callId && tc.status === 'running');
+        const toolCall = msg.toolCalls?.find((tc) => tc.id === callId && (tc.status === 'running' || tc.status === 'starting'));
         if (toolCall) {
           message = msg;
           break;
         }
       }
     } else if (toolName) {
-      // Find most recent message with running tool call matching tool_name
+      // Find most recent message with running/starting tool call matching tool_name
       for (let i = messages.length - 1; i >= 0; i--) {
         const msg = messages[i];
-        const toolCall = msg.toolCalls?.find((tc) => tc.tool_name === toolName && tc.status === 'running');
+        const toolCall = msg.toolCalls?.find((tc) => tc.tool_name === toolName && (tc.status === 'running' || tc.status === 'starting'));
         if (toolCall) {
           message = msg;
           break;
@@ -160,19 +161,21 @@ export function completeRunningToolCallForInterrupt(
   // Strategy 1: Use call_id (REQUIRED - backend always sends this)
   // This is the primary and most reliable method for parallel interrupts
   // Per LangGraph v0.4+ documentation and our backend contract
+  // NOTE: Accept both 'running' AND 'starting' status because plan_awaiting_approval
+  // may arrive before tool_call_execution (which changes status to 'running')
   if (callId) {
     // First try in the specified message
     const foundInMessage = message.toolCalls.find(
-      (tc) => tc.id === callId && tc.status === 'running'
+      (tc) => tc.id === callId && (tc.status === 'running' || tc.status === 'starting')
     );
-    
+
     if (foundInMessage) {
       targetToolCall = foundInMessage;
     } else {
       // If not found, search ALL messages (handles resume stream case where tool call is in original message)
       for (const msg of messages) {
         const toolCall = msg.toolCalls?.find(
-          (tc) => tc.id === callId && tc.status === 'running'
+          (tc) => tc.id === callId && (tc.status === 'running' || tc.status === 'starting')
         );
         if (toolCall) {
           targetToolCall = toolCall;
@@ -224,14 +227,15 @@ export function completeRunningToolCallForInterrupt(
   // Strategy 2: Fallback to tool_name matching (only if call_id is missing)
   // This should rarely be needed since backend always sends call_id
   // Search ALL messages, not just the specified one (handles resume stream case)
+  // NOTE: Accept both 'running' AND 'starting' status because interrupt may arrive before tool_call_execution
   if (toolName && !targetToolCall) {
     type ToolCallWithMessage = { toolCall: (typeof message.toolCalls)[number]; message: typeof message };
     const allMatchingToolCalls: ToolCallWithMessage[] = [];
-    
+
     // Collect all matching tool calls from all messages
     for (const msg of messages) {
       const matching = msg.toolCalls?.filter(
-        (tc) => tc.tool_name === toolName && tc.status === 'running'
+        (tc) => tc.tool_name === toolName && (tc.status === 'running' || tc.status === 'starting')
       ) || [];
       matching.forEach(tc => allMatchingToolCalls.push({ toolCall: tc, message: msg }));
     }
@@ -267,27 +271,28 @@ export function completeRunningToolCallForInterrupt(
   }
 
   // Strategy 3: Last resort fallback (should never happen if backend sends call_id correctly)
-  // Search ALL messages for any running tool call
+  // Search ALL messages for any running/starting tool call
+  // NOTE: Accept both 'running' AND 'starting' status because interrupt may arrive before tool_call_execution
   type ToolCallWithMessage = { toolCall: (typeof message.toolCalls)[number]; message: typeof message };
-  const allRunningToolCalls: ToolCallWithMessage[] = [];
-  
+  const allPendingToolCalls: ToolCallWithMessage[] = [];
+
   for (const msg of messages) {
-    const running = msg.toolCalls?.filter((tc) => tc.status === 'running') || [];
-    running.forEach(tc => allRunningToolCalls.push({ toolCall: tc, message: msg }));
+    const pending = msg.toolCalls?.filter((tc) => tc.status === 'running' || tc.status === 'starting') || [];
+    pending.forEach(tc => allPendingToolCalls.push({ toolCall: tc, message: msg }));
   }
-  
-  if (allRunningToolCalls.length > 0) {
+
+  if (allPendingToolCalls.length > 0) {
     console.error(
       `[Interrupt] CRITICAL: No call_id provided and tool_name fallback failed. ` +
-      `Completing most recent running tool call (may be incorrect). ` +
-      `Running tool calls: ${allRunningToolCalls.map(t => `${t.toolCall.tool_name}(${t.toolCall.id})`).join(', ')}. ` +
+      `Completing most recent pending tool call (may be incorrect). ` +
+      `Pending tool calls: ${allPendingToolCalls.map(t => `${t.toolCall.tool_name}(${t.toolCall.id})`).join(', ')}. ` +
       `Backend MUST send call_id in interrupt events.`
     );
     
-    const mostRecent = allRunningToolCalls[allRunningToolCalls.length - 1];
+    const mostRecent = allPendingToolCalls[allPendingToolCalls.length - 1];
     targetToolCall = mostRecent.toolCall;
     targetMessage = mostRecent.message;
-    
+
     completeToolCall(
       conversationId,
       targetMessage.id, // Use the message that actually contains the tool call

@@ -75,35 +75,9 @@ export function ChatInterface({ conversationId: initialConversationId }: ChatInt
     setActiveConversation(conversationId);
   }, [conversationId, setActiveConversation]);
 
-  // Handle URL updates when temp conversation ID is replaced with real ID
-  useEffect(() => {
-    if (!conversationId || !conversationId.startsWith('temp-')) return;
-
-    let hasNavigated = false;
-
-    // Subscribe to store changes to detect when temp ID is replaced
-    const unsubscribe = useChatStore.subscribe((state) => {
-      if (hasNavigated) return;
-
-      // Check if temp conversation still exists
-      const tempExists = state.conversations.some(c => c.id === conversationId);
-
-      if (!tempExists) {
-        // Temp ID was replaced - find the real ID by checking all conversations
-        const realConversation = state.conversations.find(
-          c => !c.id.startsWith('temp-') && c.id !== conversationId
-        );
-
-        if (realConversation) {
-          hasNavigated = true;
-          setConversationId(realConversation.id);
-          router.replace(ROUTES.chatWithId(realConversation.id));
-        }
-      }
-    });
-
-    return unsubscribe;
-  }, [conversationId, router]);
+  // Note: URL navigation is now handled in handleSendMessage
+  // The sendMessage hook returns the real conversation ID after conversation_created
+  // This eliminates the need for temp ID → real ID replacement logic
 
   const handleSendMessage = useCallback(async (content: string, files?: File[]) => {
     try {
@@ -167,6 +141,8 @@ export function ChatInterface({ conversationId: initialConversationId }: ChatInt
         }));
 
       // Send message with attachment IDs and attachment info for optimistic rendering
+      // For new chats, this returns the temp ID immediately but stores a promise for the real ID
+      const isNewChat = !conversationId;
       const resultConversationId = await sendMessage(
         content,
         attachmentIds.length > 0 ? attachmentIds : undefined,
@@ -179,10 +155,34 @@ export function ChatInterface({ conversationId: initialConversationId }: ChatInt
       // Invalidate quota cache after sending
       invalidateQuota();
 
-      // If a new conversation was created, update state and URL
-      if (resultConversationId && !conversationId) {
+      // If a new conversation was created, show chat immediately with temp ID
+      // Then wait for the real ID to navigate (prevents double navigation)
+      if (resultConversationId && isNewChat) {
+        // Update local state to show chat UI immediately with temp ID
         setConversationId(resultConversationId);
-        router.push(ROUTES.chatWithId(resultConversationId));
+
+        // Get the promise for the real ID and wait for it
+        const { getPendingRealId, clearPendingRealId } = useChatStore.getState();
+        const realIdPromise = getPendingRealId(resultConversationId);
+
+        if (realIdPromise) {
+          try {
+            // Wait for the real ID from conversation_created event
+            const realId = await realIdPromise;
+
+            // Update local state with real ID (store was already updated by callback)
+            setConversationId(realId);
+
+            // Navigate to the real URL (single navigation, no replace needed)
+            router.push(ROUTES.chatWithId(realId));
+          } catch (error) {
+            console.error('[ChatInterface] Failed to get real conversation ID:', error);
+            // On error, stay on the temp ID - error message was already shown by sendMessage
+          } finally {
+            // Clean up the promise from the store
+            clearPendingRealId(resultConversationId);
+          }
+        }
       }
     } catch (error) {
       console.error('[ChatInterface] Failed to send message with attachments:', error);

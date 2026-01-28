@@ -40,6 +40,10 @@ interface ChatState {
   // Interrupt state (LangGraph human-in-the-loop)
   activeInterrupt: InterruptState;
 
+  // Pending real ID promises for new chat creation
+  // Maps temp conversation ID to a promise that resolves with the real ID
+  pendingRealIdPromises: Record<string, Promise<string>>;
+
   // Conversation Actions
   setConversations: (conversations: Conversation[]) => void;
   appendConversations: (conversations: Conversation[]) => void;
@@ -89,6 +93,11 @@ interface ChatState {
   setActiveInterrupt: (type: InterruptType, data: InterruptData, conversationId: string) => void;
   clearActiveInterrupt: () => void;
 
+  // Pending Real ID Actions (for new chat deferred navigation)
+  setPendingRealId: (tempId: string, promise: Promise<string>) => void;
+  getPendingRealId: (tempId: string) => Promise<string> | undefined;
+  clearPendingRealId: (tempId: string) => void;
+
   // UI Actions
   setSidebarCollapsed: (collapsed: boolean) => void;
   toggleSidebar: () => void;
@@ -120,6 +129,9 @@ export const useChatStore = create<ChatState>()(
 
       // Interrupt state
       activeInterrupt: initialInterruptState,
+
+      // Pending real ID promises
+      pendingRealIdPromises: {},
 
       // Conversation Actions
       setConversations: (conversations) =>
@@ -415,6 +427,26 @@ export const useChatStore = create<ChatState>()(
       clearActiveInterrupt: () =>
         set({ activeInterrupt: initialInterruptState }),
 
+      // Pending Real ID Actions
+      setPendingRealId: (tempId, promise) =>
+        set((state) => ({
+          pendingRealIdPromises: {
+            ...state.pendingRealIdPromises,
+            [tempId]: promise,
+          },
+        })),
+
+      getPendingRealId: (tempId) => {
+        const state = get();
+        return state.pendingRealIdPromises[tempId];
+      },
+
+      clearPendingRealId: (tempId) =>
+        set((state) => {
+          const { [tempId]: _, ...rest } = state.pendingRealIdPromises;
+          return { pendingRealIdPromises: rest };
+        }),
+
       // UI Actions
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
 
@@ -444,6 +476,7 @@ export const useChatStore = create<ChatState>()(
           activePlan: null,
           isPlanApprovalInProgress: false,
           activeInterrupt: initialInterruptState,
+          pendingRealIdPromises: {},
         }),
     }),
     {

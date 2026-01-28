@@ -1140,10 +1140,19 @@ export function useChat(conversationId: string | null) {
 
   // Fetch messages for a conversation
   // Skip fetching for temp IDs since messages come from streaming
+  // Also skip if we already have messages (from streaming a new chat)
   const { isLoading, refetch } = useQuery({
     queryKey: ['messages', conversationId],
     queryFn: async () => {
       if (!conversationId) return [];
+
+      // If we already have messages in the store (from streaming), use them
+      // This prevents refetching after navigating from temp ID to real ID
+      const existingMessages = useChatStore.getState().messages[conversationId];
+      if (existingMessages && existingMessages.length > 0) {
+        return existingMessages;
+      }
+
       try {
         const data = await chatApi.getMessages(conversationId);
         setMessages(conversationId, data);
@@ -1181,7 +1190,9 @@ export function useChat(conversationId: string | null) {
       const assistantMessageId = `assistant-${Date.now()}`;
 
       // ========================================
-      // NEW CHAT PATH: Optimistic UI with background streaming
+      // NEW CHAT PATH: Optimistic UI with deferred navigation
+      // Returns temp ID immediately but stores a promise for the real ID
+      // This allows UI to show chat immediately while waiting for real ID to navigate
       // ========================================
       if (isNewChat) {
         // Generate temporary conversation ID
@@ -1215,60 +1226,80 @@ export function useChat(conversationId: string | null) {
         // Update the ref so UI can use the temp ID immediately
         activeConversationIdRef.current = tempConversationId;
 
-        // Process streaming in background (fire-and-forget)
-        (async () => {
-          try {
-            const response = await chatApi.sendNewChatMessage(content, attachmentIds);
-            const reader = response.body?.getReader();
+        // Store the promise for real ID in the store
+        // This allows ChatInterface to await navigation
+        const realIdPromise = new Promise<string>((resolve, reject) => {
+          (async () => {
+            try {
+              const response = await chatApi.sendNewChatMessage(content, attachmentIds);
+              const reader = response.body?.getReader();
 
-            if (!reader) {
-              throw new Error('No reader available');
-            }
+              if (!reader) {
+                throw new Error('No reader available');
+              }
 
-            abortControllerRef.current = new AbortController();
+              abortControllerRef.current = new AbortController();
 
-            await processStreamEvents(
-              reader,
-              tempConversationId,
-              assistantMessageId,
-              {
-                onConversationCreated: (realConversationId, data) => {
-                  // Update temp conversation ID to real ID
-                  updateConversationId(tempConversationId, realConversationId);
+              let realConversationIdResolved: string | undefined;
 
-                  // Update conversation with real data from backend
-                  const { updateConversation } = useChatStore.getState();
-                  updateConversation(realConversationId, {
-                    title: data.conversation_title || content.slice(0, 50),
-                    updatedAt: new Date(data.created_at),
-                    createdAt: new Date(data.created_at),
-                  });
+              await processStreamEvents(
+                reader,
+                tempConversationId,
+                assistantMessageId,
+                {
+                  onConversationCreated: (realConversationId, data) => {
+                    // Update temp conversation ID to real ID
+                    updateConversationId(tempConversationId, realConversationId);
 
-                  // Update active conversation ID and ref
-                  activeConversationIdRef.current = realConversationId;
+                    // Update conversation with real data from backend
+                    const { updateConversation } = useChatStore.getState();
+                    updateConversation(realConversationId, {
+                      title: data.conversation_title || content.slice(0, 50),
+                      updatedAt: new Date(data.created_at),
+                      createdAt: new Date(data.created_at),
+                    });
+
+                    // Update active conversation ID and ref
+                    activeConversationIdRef.current = realConversationId;
+                    realConversationIdResolved = realConversationId;
+
+                    // Resolve the promise with the real ID for navigation
+                    resolve(realConversationId);
+                  },
                 },
-              },
-              onChunk,
-              abortControllerRef.current.signal
-            );
-          } catch (error) {
-            console.error('Error in background streaming:', error);
-            setStreamingMessageId(null);
-            setIsSending(false);
+                onChunk,
+                abortControllerRef.current.signal
+              );
 
-            // Show error message in assistant bubble
-            const { messages: allMessages } = useChatStore.getState();
-            const currentConvId = activeConversationIdRef.current;
-            if (currentConvId && allMessages[currentConvId]) {
-              updateMessage(currentConvId, assistantMessageId, {
-                content: 'Desculpe, ocorreu um erro ao processar sua mensagem.',
-                isStreaming: false,
-              });
+              // If stream completes without conversation_created, reject
+              if (!realConversationIdResolved) {
+                reject(new Error('Stream completed without conversation_created event'));
+              }
+            } catch (error) {
+              console.error('Error in background streaming:', error);
+              setStreamingMessageId(null);
+              setIsSending(false);
+
+              // Show error message in assistant bubble
+              const { messages: allMessages } = useChatStore.getState();
+              const currentConvId = activeConversationIdRef.current;
+              if (currentConvId && allMessages[currentConvId]) {
+                updateMessage(currentConvId, assistantMessageId, {
+                  content: 'Desculpe, ocorreu um erro ao processar sua mensagem.',
+                  isStreaming: false,
+                });
+              }
+
+              reject(error);
             }
-          }
-        })();
+          })();
+        });
 
-        // Return temp ID immediately for navigation
+        // Store the promise in the store for ChatInterface to await
+        const { setPendingRealId } = useChatStore.getState();
+        setPendingRealId(tempConversationId, realIdPromise);
+
+        // Return temp ID immediately so UI can show chat
         return tempConversationId;
       }
 

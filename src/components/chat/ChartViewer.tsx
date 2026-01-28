@@ -24,7 +24,6 @@ import {
   CHART_AXIS_STYLE,
   CHART_LEGEND_STYLE,
   CHART_HEIGHTS,
-  CHART_MARGINS,
   formatTooltipValue,
 } from '@/lib/utils/chartUtils';
 import { ChartEmptyState, ChartContainer, ChartDataSummary } from '@/components/ui/chart-primitives';

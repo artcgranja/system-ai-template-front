@@ -443,6 +443,7 @@ export const useChatStore = create<ChatState>()(
 
       clearPendingRealId: (tempId) =>
         set((state) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [tempId]: _, ...rest } = state.pendingRealIdPromises;
           return { pendingRealIdPromises: rest };
         }),

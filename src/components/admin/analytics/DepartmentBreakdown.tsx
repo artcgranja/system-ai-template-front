@@ -13,25 +13,22 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { DepartmentBreakdown as DepartmentBreakdownType } from '@/types/analytics';
+import { CHART_PALETTE } from '@/config/chartColors';
+import {
+  formatChartNumber,
+  CHART_TOOLTIP_STYLE,
+  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_GRID_STYLE,
+  CHART_AXIS_STYLE,
+} from '@/lib/utils/chartUtils';
+import { ChartEmptyState } from '@/components/ui/chart-primitives';
 
 interface DepartmentBreakdownProps {
   departments: DepartmentBreakdownType[];
   isLoading?: boolean;
 }
 
-import { CHART_PALETTE } from '@/config/chartColors';
-
 const ASTRO_COLORS = CHART_PALETTE;
-
-function formatNumber(value: number): string {
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}K`;
-  }
-  return value.toLocaleString('pt-BR');
-}
 
 export function DepartmentBreakdown({ departments, isLoading }: DepartmentBreakdownProps) {
   if (isLoading) {
@@ -67,50 +64,44 @@ export function DepartmentBreakdown({ departments, isLoading }: DepartmentBreakd
       </CardHeader>
       <CardContent>
         {chartData.length === 0 ? (
-          <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-            Nenhum dado disponivel
-          </div>
+          <ChartEmptyState message="Nenhum dado disponível" height={300} />
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
+              accessibilityLayer
               data={chartData}
               layout="vertical"
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+              <CartesianGrid {...CHART_GRID_STYLE} horizontal={false} />
               <XAxis
                 type="number"
-                stroke="hsl(var(--muted-foreground))"
-                style={{ fontSize: '12px' }}
-                tickFormatter={formatNumber}
+                stroke={CHART_AXIS_STYLE.stroke}
+                style={{ fontSize: CHART_AXIS_STYLE.fontSize }}
+                tickFormatter={formatChartNumber}
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis
                 type="category"
                 dataKey="name"
-                stroke="hsl(var(--muted-foreground))"
-                style={{ fontSize: '12px' }}
+                stroke={CHART_AXIS_STYLE.stroke}
+                style={{ fontSize: CHART_AXIS_STYLE.fontSize }}
                 tickLine={false}
                 axisLine={false}
                 width={100}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                }}
-                labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                contentStyle={CHART_TOOLTIP_STYLE}
+                labelStyle={CHART_TOOLTIP_LABEL_STYLE}
                 formatter={(value, _name, entry) => {
                   const numValue = typeof value === 'number' ? value : 0;
                   const payload = entry.payload as { fullName: string; users: number; percentage: number };
                   return [
                     <div key="tooltip" className="space-y-1">
-                      <div>{formatNumber(numValue)} tokens</div>
+                      <div>{formatChartNumber(numValue)} tokens</div>
                       <div className="text-xs text-muted-foreground">
-                        {payload.users} usuarios ativos
+                        {payload.users} usuários ativos
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {payload.percentage.toFixed(1)}% do total

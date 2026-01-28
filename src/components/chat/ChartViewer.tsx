@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useId } from 'react';
 import {
   LineChart,
   Line,
@@ -17,6 +17,17 @@ import { CheckSquare, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatKeyName, formatValue } from '@/lib/utils/toolResultParser';
 import { CHART_PALETTE } from '@/config/chartColors';
+import {
+  CHART_TOOLTIP_STYLE,
+  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_GRID_STYLE,
+  CHART_AXIS_STYLE,
+  CHART_LEGEND_STYLE,
+  CHART_HEIGHTS,
+  CHART_MARGINS,
+  formatTooltipValue,
+} from '@/lib/utils/chartUtils';
+import { ChartEmptyState, ChartContainer, ChartDataSummary } from '@/components/ui/chart-primitives';
 
 interface ChartViewerProps {
   data: Record<string, unknown>[];
@@ -108,26 +119,18 @@ function analyzeDataStructure(data: Record<string, unknown>[]) {
 }
 
 export function ChartViewer({ data }: ChartViewerProps) {
+  const chartId = useId();
   const analysis = useMemo(() => analyzeDataStructure(data), [data]);
   const [selectedColumns, setSelectedColumns] = useState<string[]>(
     analysis.numericColumns.slice(0, 3) // Select first 3 numeric columns by default
   );
-  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   if (data.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground py-8 text-center">
-        Nenhum dado disponível para gráfico
-      </div>
-    );
+    return <ChartEmptyState message="Nenhum dado disponível para gráfico" />;
   }
 
   if (analysis.numericColumns.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground py-8 text-center">
-        Nenhuma coluna numérica encontrada para visualização
-      </div>
-    );
+    return <ChartEmptyState message="Nenhuma coluna numérica encontrada para visualização" />;
   }
 
   // Prepare chart data
@@ -207,43 +210,37 @@ export function ChartViewer({ data }: ChartViewerProps) {
 
       {/* Chart */}
       {selectedColumns.length > 0 ? (
-        <div ref={chartContainerRef} className="rounded-lg border border-border/50 bg-background p-4">
-          <ResponsiveContainer width="100%" height={400}>
-            <ChartComponent data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+        <ChartContainer>
+          <ResponsiveContainer width="100%" height={CHART_HEIGHTS.detailed}>
+            <ChartComponent accessibilityLayer data={chartData}>
+              <CartesianGrid {...CHART_GRID_STYLE} />
               <XAxis
                 dataKey="xAxis"
-                stroke="hsl(var(--muted-foreground))"
-                style={{ fontSize: '12px' }}
+                stroke={CHART_AXIS_STYLE.stroke}
+                style={{ fontSize: CHART_AXIS_STYLE.fontSize }}
                 angle={-45}
                 textAnchor="end"
                 height={80}
+                tickLine={false}
               />
               <YAxis
-                stroke="hsl(var(--muted-foreground))"
-                style={{ fontSize: '12px' }}
+                stroke={CHART_AXIS_STYLE.stroke}
+                style={{ fontSize: CHART_AXIS_STYLE.fontSize }}
+                tickLine={false}
+                axisLine={false}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                }}
-                labelStyle={{ color: 'hsl(var(--foreground))' }}
-                formatter={(value: unknown) => {
-                  if (typeof value === 'number') {
-                    return value.toLocaleString('pt-BR');
-                  }
-                  return String(value);
-                }}
+                contentStyle={CHART_TOOLTIP_STYLE}
+                labelStyle={CHART_TOOLTIP_LABEL_STYLE}
+                formatter={(value: unknown) => formatTooltipValue(value)}
               />
               <Legend
-                wrapperStyle={{ paddingTop: '20px' }}
+                wrapperStyle={CHART_LEGEND_STYLE}
                 formatter={(value: string) => formatKeyName(value)}
               />
               {selectedColumns.map((col, index) => (
                 <DataComponent
-                  key={col}
+                  key={`${chartId}-${col}`}
                   type={hasDateColumn ? 'monotone' : undefined}
                   dataKey={col}
                   stroke={colors[index % colors.length]}
@@ -255,17 +252,13 @@ export function ChartViewer({ data }: ChartViewerProps) {
               ))}
             </ChartComponent>
           </ResponsiveContainer>
-        </div>
+        </ChartContainer>
       ) : (
-        <div className="text-sm text-muted-foreground py-8 text-center border border-border/50 rounded-lg">
-          Selecione pelo menos uma coluna para visualizar
-        </div>
+        <ChartEmptyState message="Selecione pelo menos uma coluna para visualizar" />
       )}
 
       {/* Data summary */}
-      <div className="text-xs text-muted-foreground/60 text-right">
-        {data.length} {data.length === 1 ? 'ponto de dados' : 'pontos de dados'}
-      </div>
+      <ChartDataSummary count={data.length} singular="ponto de dados" plural="pontos de dados" />
     </div>
   );
 }

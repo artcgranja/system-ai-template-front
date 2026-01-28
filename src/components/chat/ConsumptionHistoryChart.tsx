@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -13,6 +13,17 @@ import {
 } from 'recharts';
 import type { ConsumptionHistoryData } from '@/lib/utils/toolSpecificParsers';
 import { CHART_PALETTE } from '@/config/chartColors';
+import {
+  CHART_TOOLTIP_STYLE,
+  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_GRID_STYLE,
+  CHART_AXIS_STYLE,
+  CHART_LEGEND_STYLE,
+  CHART_HEIGHTS,
+  CHART_MARGINS,
+  formatTooltipValue,
+} from '@/lib/utils/chartUtils';
+import { ChartEmptyState, ChartContainer, ChartDataSummary } from '@/components/ui/chart-primitives';
 
 interface ConsumptionHistoryChartProps {
   data: ConsumptionHistoryData[];
@@ -86,60 +97,48 @@ function prepareChartData(data: ConsumptionHistoryData[]) {
 
 export function ConsumptionHistoryChart({ data }: ConsumptionHistoryChartProps) {
   const { chartData, years } = useMemo(() => prepareChartData(data), [data]);
-  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   // Color palette for different years (Astro Steel Blue + Complementary)
   const colors = CHART_PALETTE;
 
   if (data.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground py-8 text-center">
-        Nenhum dado de consumo disponível
-      </div>
-    );
+    return <ChartEmptyState message="Nenhum dado de consumo disponível" />;
   }
 
   return (
     <div className="space-y-4" data-consumption-chart>
-      <div ref={chartContainerRef} className="rounded-lg border border-border/50 bg-background p-4">
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+      <ChartContainer>
+        <ResponsiveContainer width="100%" height={CHART_HEIGHTS.detailed}>
+          <BarChart accessibilityLayer data={chartData} margin={CHART_MARGINS.withAngledLabels}>
+            <CartesianGrid {...CHART_GRID_STYLE} />
             <XAxis
               dataKey="month"
-              stroke="hsl(var(--muted-foreground))"
-              style={{ fontSize: '12px' }}
+              stroke={CHART_AXIS_STYLE.stroke}
+              style={{ fontSize: CHART_AXIS_STYLE.fontSize }}
               angle={-45}
               textAnchor="end"
               height={80}
+              tickLine={false}
             />
             <YAxis
-              stroke="hsl(var(--muted-foreground))"
-              style={{ fontSize: '12px' }}
-              label={{ 
-                value: 'Consumo (kWh)', 
-                angle: -90, 
+              stroke={CHART_AXIS_STYLE.stroke}
+              style={{ fontSize: CHART_AXIS_STYLE.fontSize }}
+              label={{
+                value: 'Consumo (kWh)',
+                angle: -90,
                 position: 'insideLeft',
                 style: { textAnchor: 'middle', fill: 'hsl(var(--foreground))' }
               }}
+              tickLine={false}
+              axisLine={false}
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: 'hsl(var(--background))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '6px',
-              }}
-              labelStyle={{ color: 'hsl(var(--foreground))' }}
-              formatter={(value: unknown) => {
-                if (value === null || value === undefined) return '-';
-                if (typeof value === 'number') {
-                  return `${value.toLocaleString('pt-BR')} kWh`;
-                }
-                return String(value);
-              }}
+              contentStyle={CHART_TOOLTIP_STYLE}
+              labelStyle={CHART_TOOLTIP_LABEL_STYLE}
+              formatter={(value: unknown) => formatTooltipValue(value, 'consumption_kwh')}
             />
             <Legend
-              wrapperStyle={{ paddingTop: '20px' }}
+              wrapperStyle={CHART_LEGEND_STYLE}
               formatter={(value: string) => `Ano ${value}`}
             />
             {years.map((year, index) => (
@@ -153,10 +152,8 @@ export function ConsumptionHistoryChart({ data }: ConsumptionHistoryChartProps) 
             ))}
           </BarChart>
         </ResponsiveContainer>
-      </div>
-      <div className="text-xs text-muted-foreground/60 text-right">
-        {data.length} {data.length === 1 ? 'registro' : 'registros'} de consumo
-      </div>
+      </ChartContainer>
+      <ChartDataSummary count={data.length} singular="registro de consumo" plural="registros de consumo" />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useId } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -16,28 +16,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Coins, MessageSquare, Users, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { WeeklyUsage } from '@/types/rbac';
+import { ASTRO_CHART_COLORS } from '@/config/chartColors';
+import {
+  formatChartNumber,
+  CHART_TOOLTIP_STYLE,
+  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_GRID_STYLE,
+  CHART_AXIS_STYLE,
+  CHART_HEIGHTS,
+  CHART_MARGINS,
+  getChartLabel,
+} from '@/lib/utils/chartUtils';
+import { ChartEmptyState } from '@/components/ui/chart-primitives';
 
 interface WeeklyUsageDashboardProps {
   weeklyUsage: WeeklyUsage;
 }
-
-import { ASTRO_CHART_COLORS } from '@/config/chartColors';
 
 const ASTRO_COLORS = {
   primary: ASTRO_CHART_COLORS.primary,
   secondary: ASTRO_CHART_COLORS.complementary,
   tertiary: ASTRO_CHART_COLORS.teal,
 };
-
-function formatNumber(value: number): string {
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(2)}M`;
-  }
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}K`;
-  }
-  return value.toLocaleString('pt-BR');
-}
 
 function ChangeIndicator({ value, suffix = '%' }: { value: number | null; suffix?: string }) {
   if (value === null) {
@@ -111,6 +111,9 @@ function StatCard({
 }
 
 export function WeeklyUsageDashboard({ weeklyUsage }: WeeklyUsageDashboardProps) {
+  const chartId = useId();
+  const gradientId = `${chartId}-colorNormalized`;
+
   const chartData = useMemo(() => {
     return weeklyUsage.dailyData.map((day) => ({
       date: format(parseISO(day.date), 'dd/MM', { locale: ptBR }),
@@ -135,27 +138,27 @@ export function WeeklyUsageDashboard({ weeklyUsage }: WeeklyUsageDashboardProps)
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total de Tokens Normalizados"
-          value={formatNumber(weeklyUsage.summary.normalizedTokens)}
+          value={formatChartNumber(weeklyUsage.summary.normalizedTokens)}
           change={weeklyUsage.previousWeekComparison.tokensChangePercent}
           icon={Coins}
           subtitle="vs. semana anterior"
         />
         <StatCard
-          title="Total de Requisicoes"
-          value={formatNumber(weeklyUsage.summary.totalRequests)}
+          title="Total de Requisições"
+          value={formatChartNumber(weeklyUsage.summary.totalRequests)}
           change={weeklyUsage.previousWeekComparison.requestsChangePercent}
           icon={MessageSquare}
           subtitle="vs. semana anterior"
         />
         <StatCard
-          title="Usuarios Unicos"
-          value={formatNumber(weeklyUsage.summary.uniqueUsers)}
+          title="Usuários Únicos"
+          value={formatChartNumber(weeklyUsage.summary.uniqueUsers)}
           icon={Users}
           subtitle={`${weeklyUsage.summary.totalConversations} conversas`}
         />
         <StatCard
           title="Total de Tokens"
-          value={formatNumber(weeklyUsage.summary.totalTokens)}
+          value={formatChartNumber(weeklyUsage.summary.totalTokens)}
           icon={Coins}
           subtitle={weekRange}
         />
@@ -164,60 +167,47 @@ export function WeeklyUsageDashboard({ weeklyUsage }: WeeklyUsageDashboardProps)
       {/* Weekly Chart */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Utilizacao da Semana Atual</CardTitle>
+          <CardTitle className="text-lg font-semibold">Utilização da Semana Atual</CardTitle>
           <CardDescription>
-            Dados diarios de utilizacao de tokens normalizados ({weekRange})
+            Dados diários de utilização de tokens normalizados ({weekRange})
           </CardDescription>
         </CardHeader>
         <CardContent>
           {chartData.length === 0 ? (
-            <div className="flex items-center justify-center h-[350px] text-muted-foreground">
-              Nenhum dado disponivel para esta semana
-            </div>
+            <ChartEmptyState message="Nenhum dado disponível para esta semana" />
           ) : (
-            <ResponsiveContainer width="100%" height={350}>
+            <ResponsiveContainer width="100%" height={CHART_HEIGHTS.default}>
               <AreaChart
+                accessibilityLayer
                 data={chartData}
-                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                margin={CHART_MARGINS.default}
               >
                 <defs>
-                  <linearGradient id="colorNormalized" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={ASTRO_COLORS.primary} stopOpacity={0.3} />
                     <stop offset="95%" stopColor={ASTRO_COLORS.primary} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <CartesianGrid {...CHART_GRID_STYLE} />
                 <XAxis
                   dataKey="date"
-                  stroke="hsl(var(--muted-foreground))"
-                  style={{ fontSize: '12px' }}
+                  stroke={CHART_AXIS_STYLE.stroke}
+                  style={{ fontSize: CHART_AXIS_STYLE.fontSize }}
                   tickLine={false}
                 />
                 <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  style={{ fontSize: '12px' }}
-                  tickFormatter={formatNumber}
+                  stroke={CHART_AXIS_STYLE.stroke}
+                  style={{ fontSize: CHART_AXIS_STYLE.fontSize }}
+                  tickFormatter={formatChartNumber}
                   tickLine={false}
                   axisLine={false}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                  }}
-                  labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                  contentStyle={CHART_TOOLTIP_STYLE}
+                  labelStyle={CHART_TOOLTIP_LABEL_STYLE}
                   formatter={(value, name) => {
                     const numValue = typeof value === 'number' ? value : 0;
-                    const nameStr = name as string;
-                    const labels: Record<string, string> = {
-                      normalizedTokens: 'Tokens Normalizados',
-                      totalTokens: 'Total de Tokens',
-                      requestCount: 'Requisicoes',
-                      uniqueUsers: 'Usuarios Unicos',
-                    };
-                    return [numValue.toLocaleString('pt-BR'), labels[nameStr] || nameStr];
+                    return [numValue.toLocaleString('pt-BR'), getChartLabel(name as string)];
                   }}
                 />
                 <Area
@@ -226,7 +216,7 @@ export function WeeklyUsageDashboard({ weeklyUsage }: WeeklyUsageDashboardProps)
                   stroke={ASTRO_COLORS.primary}
                   strokeWidth={2}
                   fillOpacity={1}
-                  fill="url(#colorNormalized)"
+                  fill={`url(#${gradientId})`}
                 />
               </AreaChart>
             </ResponsiveContainer>

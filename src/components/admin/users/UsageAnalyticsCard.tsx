@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { BarChart3, PieChart } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   AreaChart,
@@ -20,8 +20,19 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { regroupTimeSeriesData } from '@/lib/utils/analytics';
 import type { UsageAnalytics, TimeSeriesDataPoint, ModelBreakdown, AnalyticsGroupBy } from '@/types/analytics';
-
 import { ASTRO_CHART_COLORS } from '@/config/chartColors';
+import {
+  formatChartNumber,
+  formatChartDate,
+  CHART_TOOLTIP_STYLE,
+  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_GRID_STYLE,
+  CHART_AXIS_STYLE,
+  CHART_HEIGHTS,
+  CHART_MARGINS,
+  getChartLabel,
+} from '@/lib/utils/chartUtils';
+import { ChartEmptyState } from '@/components/ui/chart-primitives';
 
 const ASTRO_COLORS = {
   primary: ASTRO_CHART_COLORS.primary,
@@ -35,15 +46,10 @@ interface UsageAnalyticsCardProps {
 
 /**
  * Formats large token numbers to human-readable format
+ * @deprecated Use formatChartNumber from chartUtils.ts instead
  */
 export function formatTokens(value: number): string {
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}K`;
-  }
-  return value.toLocaleString('pt-BR');
+  return formatChartNumber(value);
 }
 
 /**
@@ -63,57 +69,30 @@ export function getBarColor(index: number): string {
 }
 
 /**
- * Format number for display
- */
-function formatNumber(value: number): string {
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}K`;
-  }
-  return value.toLocaleString('pt-BR');
-}
-
-/**
- * Format date label for chart based on grouping
- */
-function formatDateLabel(dateStr: string, grouping: AnalyticsGroupBy = 'day'): string {
-  try {
-    const date = parseISO(dateStr);
-    if (grouping === 'day') {
-      return format(date, 'dd/MM', { locale: ptBR });
-    }
-    if (grouping === 'week') {
-      return format(date, "'Sem' w", { locale: ptBR });
-    }
-    return format(date, 'MMM/yy', { locale: ptBR });
-  } catch {
-    return dateStr;
-  }
-}
-
-/**
  * Area chart for daily breakdown using Recharts
  * Follows the same pattern as the analytics page
  */
-export function DailyBreakdownChart({ 
+export function DailyBreakdownChart({
   dataPoints,
   grouping = 'day',
-  onGroupByChange 
-}: { 
+  onGroupByChange
+}: {
   dataPoints: TimeSeriesDataPoint[];
   grouping?: AnalyticsGroupBy;
   onGroupByChange?: (groupBy: AnalyticsGroupBy) => void;
 }) {
+  const chartId = useId();
   const [viewMode, setViewMode] = useState<'total' | 'split'>('total');
 
+  // Generate unique gradient IDs to avoid conflicts
+  const gradientIds = {
+    normalized: `${chartId}-colorNormalized`,
+    input: `${chartId}-colorInput`,
+    output: `${chartId}-colorOutput`,
+  };
+
   if (dataPoints.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-[350px] text-muted-foreground">
-        Sem dados para o periodo
-      </div>
-    );
+    return <ChartEmptyState message="Sem dados para o período" />;
   }
 
   // Regroup data based on grouping period (week/month)
@@ -121,10 +100,10 @@ export function DailyBreakdownChart({
 
   // Prepare chart data
   const chartData = regroupedData.map((point) => ({
-    date: formatDateLabel(point.date, grouping),
+    date: formatChartDate(point.date, grouping),
     fullDate: point.date,
-    normalizedTokens: typeof point.normalizedTokens === 'number' 
-      ? point.normalizedTokens 
+    normalizedTokens: typeof point.normalizedTokens === 'number'
+      ? point.normalizedTokens
       : (Number(point.normalizedTokens) || 0),
     totalTokens: point.totalTokens,
     inputTokens: point.inputTokens,
@@ -135,49 +114,37 @@ export function DailyBreakdownChart({
   const isBarChart = grouping === 'week' || grouping === 'month';
   const commonChartProps = {
     data: chartData,
-    margin: { top: 10, right: 30, left: 0, bottom: 0 },
+    margin: CHART_MARGINS.default,
   };
 
   const renderChart = () => {
     if (isBarChart) {
       return (
-        <BarChart {...commonChartProps}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+        <BarChart accessibilityLayer {...commonChartProps}>
+          <CartesianGrid {...CHART_GRID_STYLE} />
           <XAxis
             dataKey="date"
-            stroke="hsl(var(--muted-foreground))"
-            style={{ fontSize: '12px' }}
+            stroke={CHART_AXIS_STYLE.stroke}
+            style={{ fontSize: CHART_AXIS_STYLE.fontSize }}
             tickLine={false}
           />
           <YAxis
-            stroke="hsl(var(--muted-foreground))"
-            style={{ fontSize: '12px' }}
-            tickFormatter={formatNumber}
+            stroke={CHART_AXIS_STYLE.stroke}
+            style={{ fontSize: CHART_AXIS_STYLE.fontSize }}
+            tickFormatter={formatChartNumber}
             tickLine={false}
             axisLine={false}
           />
           <Tooltip
-            contentStyle={{
-              backgroundColor: 'hsl(var(--background))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-            }}
-            labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+            contentStyle={CHART_TOOLTIP_STYLE}
+            labelStyle={CHART_TOOLTIP_LABEL_STYLE}
             formatter={(value, name) => {
               const numValue = typeof value === 'number' ? value : 0;
               const nameStr = name as string;
-              const labels: Record<string, string> = {
-                normalizedTokens: 'Tokens Normalizados',
-                totalTokens: 'Total de Tokens',
-                inputTokens: 'Tokens de Entrada',
-                outputTokens: 'Tokens de Saida',
-                requestCount: 'Requisições',
-              };
               if (nameStr === 'requestCount') {
-                return [numValue.toLocaleString('pt-BR'), labels[nameStr] || nameStr];
+                return [numValue.toLocaleString('pt-BR'), getChartLabel(nameStr)];
               }
-              return [formatNumber(numValue), labels[nameStr] || nameStr];
+              return [formatChartNumber(numValue), getChartLabel(nameStr)];
             }}
           />
           {viewMode === 'total' ? (
@@ -193,57 +160,45 @@ export function DailyBreakdownChart({
     }
 
     return (
-      <AreaChart {...commonChartProps}>
+      <AreaChart accessibilityLayer {...commonChartProps}>
         <defs>
-          <linearGradient id="colorNormalized" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gradientIds.normalized} x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={ASTRO_COLORS.primary} stopOpacity={0.3} />
             <stop offset="95%" stopColor={ASTRO_COLORS.primary} stopOpacity={0} />
           </linearGradient>
-          <linearGradient id="colorInput" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gradientIds.input} x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={ASTRO_COLORS.secondary} stopOpacity={0.3} />
             <stop offset="95%" stopColor={ASTRO_COLORS.secondary} stopOpacity={0} />
           </linearGradient>
-          <linearGradient id="colorOutput" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gradientIds.output} x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={ASTRO_COLORS.tertiary} stopOpacity={0.3} />
             <stop offset="95%" stopColor={ASTRO_COLORS.tertiary} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+        <CartesianGrid {...CHART_GRID_STYLE} />
         <XAxis
           dataKey="date"
-          stroke="hsl(var(--muted-foreground))"
-          style={{ fontSize: '12px' }}
+          stroke={CHART_AXIS_STYLE.stroke}
+          style={{ fontSize: CHART_AXIS_STYLE.fontSize }}
           tickLine={false}
         />
         <YAxis
-          stroke="hsl(var(--muted-foreground))"
-          style={{ fontSize: '12px' }}
-          tickFormatter={formatNumber}
+          stroke={CHART_AXIS_STYLE.stroke}
+          style={{ fontSize: CHART_AXIS_STYLE.fontSize }}
+          tickFormatter={formatChartNumber}
           tickLine={false}
           axisLine={false}
         />
         <Tooltip
-          contentStyle={{
-            backgroundColor: 'hsl(var(--background))',
-            border: '1px solid hsl(var(--border))',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-          }}
-          labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+          contentStyle={CHART_TOOLTIP_STYLE}
+          labelStyle={CHART_TOOLTIP_LABEL_STYLE}
           formatter={(value, name) => {
             const numValue = typeof value === 'number' ? value : 0;
             const nameStr = name as string;
-            const labels: Record<string, string> = {
-              normalizedTokens: 'Tokens Normalizados',
-              totalTokens: 'Total de Tokens',
-              inputTokens: 'Tokens de Entrada',
-              outputTokens: 'Tokens de Saida',
-              requestCount: 'Requisições',
-            };
             if (nameStr === 'requestCount') {
-              return [numValue.toLocaleString('pt-BR'), labels[nameStr] || nameStr];
+              return [numValue.toLocaleString('pt-BR'), getChartLabel(nameStr)];
             }
-            return [formatNumber(numValue), labels[nameStr] || nameStr];
+            return [formatChartNumber(numValue), getChartLabel(nameStr)];
           }}
         />
         {viewMode === 'total' ? (
@@ -253,7 +208,7 @@ export function DailyBreakdownChart({
             stroke={ASTRO_COLORS.primary}
             strokeWidth={2}
             fillOpacity={1}
-            fill="url(#colorNormalized)"
+            fill={`url(#${gradientIds.normalized})`}
           />
         ) : (
           <>
@@ -263,7 +218,7 @@ export function DailyBreakdownChart({
               stroke={ASTRO_COLORS.secondary}
               strokeWidth={2}
               fillOpacity={1}
-              fill="url(#colorInput)"
+              fill={`url(#${gradientIds.input})`}
             />
             <Area
               type="monotone"
@@ -271,7 +226,7 @@ export function DailyBreakdownChart({
               stroke={ASTRO_COLORS.tertiary}
               strokeWidth={2}
               fillOpacity={1}
-              fill="url(#colorOutput)"
+              fill={`url(#${gradientIds.output})`}
             />
           </>
         )}
@@ -350,7 +305,7 @@ export function DailyBreakdownChart({
       </div>
 
       {/* Chart */}
-      <ResponsiveContainer width="100%" height={350}>
+      <ResponsiveContainer width="100%" height={CHART_HEIGHTS.default}>
         {renderChart()}
       </ResponsiveContainer>
     </>
@@ -362,11 +317,7 @@ export function DailyBreakdownChart({
  */
 export function ModelBreakdownChart({ models }: { models: ModelBreakdown[] }) {
   if (models.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-48 text-muted-foreground">
-        Sem dados de modelos
-      </div>
-    );
+    return <ChartEmptyState message="Sem dados de modelos" height={192} />;
   }
 
   const sortedModels = [...models].sort((a, b) => b.normalizedTokens - a.normalizedTokens);
@@ -378,7 +329,7 @@ export function ModelBreakdownChart({ models }: { models: ModelBreakdown[] }) {
         <div key={model.modelName} className="space-y-1">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium truncate max-w-[60%]">{model.modelName}</span>
-            <span className="text-muted-foreground">{formatTokens(model.normalizedTokens)}</span>
+            <span className="text-muted-foreground">{formatChartNumber(model.normalizedTokens)}</span>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
             <div
@@ -387,7 +338,7 @@ export function ModelBreakdownChart({ models }: { models: ModelBreakdown[] }) {
             />
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{model.requestCount} requisicoes</span>
+            <span>{model.requestCount} requisições</span>
             <span>{model.percentageOfTotal.toFixed(1)}%</span>
           </div>
         </div>
@@ -408,7 +359,7 @@ export function UsageAnalyticsCard({ usageAnalytics }: UsageAnalyticsCardProps) 
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Uso Diario
+            Uso Diário
           </CardTitle>
           <CardDescription>
             {format(new Date(usageAnalytics.periodStart), "dd 'de' MMMM", { locale: ptBR })} - {' '}
@@ -428,7 +379,7 @@ export function UsageAnalyticsCard({ usageAnalytics }: UsageAnalyticsCardProps) 
             Uso por Modelo
           </CardTitle>
           <CardDescription>
-            Distribuicao de tokens por modelo
+            Distribuição de tokens por modelo
           </CardDescription>
         </CardHeader>
         <CardContent>

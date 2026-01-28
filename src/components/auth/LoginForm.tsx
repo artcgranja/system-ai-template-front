@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { Loader2, Zap } from 'lucide-react';
+import { useState, FormEvent, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { useAuth } from '@/lib/hooks/useAuth';
 import type { ApiError } from '@/types/api';
 
@@ -20,9 +22,17 @@ function getErrorMessage(error: unknown): string {
 
 export function LoginForm() {
   const { login, isLoading, loginError } = useAuth();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Verificar se a sessão expirou (parâmetro do middleware)
+  useEffect(() => {
+    if (searchParams.get('expired') === 'true') {
+      setError('Sua sessão expirou. Por favor, faça login novamente.');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,15 +55,21 @@ export function LoginForm() {
 
   return (
     <Card className="w-full max-w-md">
-      <CardHeader className="space-y-2 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-          <Zap className="h-6 w-6 text-primary-foreground" />
+      <CardHeader className="space-y-4 text-center">
+        <div className="mx-auto flex items-center justify-center">
+          <Image
+            src="/astro_logo_branco.svg"
+            alt="Astro"
+            width={180}
+            height={40}
+            priority
+            className="dark:invert-0 invert"
+          />
         </div>
-        <CardTitle className="text-2xl">Astro IA</CardTitle>
         <CardDescription>Faça login para acessar o assistente inteligente</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" aria-describedby={errorMessage ? 'login-error' : undefined}>
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium">
               Email
@@ -66,6 +82,7 @@ export function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
               autoComplete="email"
+              aria-required="true"
               required
             />
           </div>
@@ -82,12 +99,17 @@ export function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
               autoComplete="current-password"
+              aria-required="true"
               required
             />
           </div>
 
           {errorMessage && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            <div
+              id="login-error"
+              role="alert"
+              className="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
+            >
               {errorMessage}
             </div>
           )}
